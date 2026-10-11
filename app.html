@@ -1,0 +1,4316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="The Family Archive — a procedural genealogy deduction game. Every trunk holds a different family, a different puzzle, and a different story.">
+  <title>The Family Archive — A Procedural Genealogy Deduction Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Special+Elite&family=Homemade+Apple&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --wall: #e5dac2;
+      --paper: #f2e9d6;
+      --paper2: #f7efdd;
+      --ink: #2c241a;
+      --ink2: #6a5a44;
+      --ink3: #9a8666;
+      --line: #cbbc9c;
+      --red: #9a3b26;
+      --brass: #a07f3c;
+      --leather: #2a2118;
+      --graphite: #6b6557;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      background: var(--wall);
+      color: var(--ink);
+      font-family: 'Spectral', serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      opacity: .9;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer
+    }
+
+    ::selection {
+      background: #d8c49a
+    }
+
+    /* masthead */
+    #masthead {
+      flex: none;
+      padding: 12px 24px 0;
+      border-bottom: 3px double var(--ink);
+      background: var(--paper);
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: flex-end;
+      gap: 28px;
+      flex-wrap: wrap
+    }
+
+    #masthead h1 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 27px;
+      letter-spacing: .03em;
+      line-height: 1
+    }
+
+    #masthead .sub {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--ink2);
+      margin-top: 3px
+    }
+
+    .mh-stats {
+      display: flex;
+      gap: 26px;
+      margin-left: auto;
+      padding-bottom: 8px
+    }
+
+    .stat b {
+      display: block;
+      font-family: 'IM Fell English', serif;
+      font-weight: 400;
+      font-size: 19px;
+      line-height: 1.1
+    }
+
+    .stat span {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--ink3)
+    }
+
+    .mh-actions {
+      display: flex;
+      gap: 8px;
+      padding-bottom: 6px
+    }
+
+    .icobtn {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      display: grid;
+      place-items: center;
+      color: var(--ink2);
+      background: var(--paper2);
+      transition: .18s
+    }
+
+    .icobtn:hover {
+      color: var(--ink);
+      border-color: var(--ink2)
+    }
+
+    .icobtn:disabled {
+      opacity: .35;
+      cursor: default
+    }
+
+    .icobtn:disabled:hover {
+      color: var(--ink2);
+      border-color: var(--line)
+    }
+
+    .icobtn svg {
+      width: 17px;
+      height: 17px
+    }
+
+    #prog {
+      position: absolute;
+      left: 0;
+      bottom: -3px;
+      height: 3px;
+      background: var(--brass);
+      width: 0;
+      transition: width .6s ease;
+      z-index: 2
+    }
+
+    /* layout */
+    main {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 386px;
+      gap: 14px;
+      padding: 14px
+    }
+
+    .panel {
+      background: radial-gradient(1100px 480px at 18% 0%, rgba(255, 252, 240, .55), transparent 60%), radial-gradient(900px 600px at 92% 100%, rgba(120, 90, 50, .07), transparent 55%), var(--paper);
+      border: 1px solid #d5c6a4;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 2px 10px rgba(80, 60, 30, .08)
+    }
+
+    .panelhead {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap
+    }
+
+    .panelhead h2 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 17px;
+      letter-spacing: .06em
+    }
+
+    .panelhead p {
+      margin-left: auto;
+      font-size: 11.5px;
+      font-style: italic;
+      color: var(--ink3);
+      text-align: right;
+      flex: 1;
+      min-width: 180px
+    }
+
+    .btn {
+      border: 1px solid var(--ink);
+      padding: 7px 14px;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      transition: .18s;
+      background: transparent
+    }
+
+    .btn:hover {
+      background: var(--ink);
+      color: var(--paper)
+    }
+
+    .btn.red {
+      border-color: var(--red);
+      color: var(--red)
+    }
+
+    .btn.red:hover {
+      background: var(--red);
+      color: var(--paper)
+    }
+
+    .btn:disabled {
+      opacity: .45;
+      cursor: default
+    }
+
+    .btn:disabled:hover {
+      background: transparent;
+      color: var(--ink)
+    }
+
+    .btn.sel {
+      border-color: var(--red);
+      color: var(--red);
+      background: #fdf7ee
+    }
+
+    .btn.attention {
+      border-color: var(--red);
+      color: var(--red);
+      animation: pulse 2s infinite
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(154, 59, 38, 0)
+      }
+
+      50% {
+        box-shadow: 0 0 0 5px rgba(154, 59, 38, .14)
+      }
+    }
+
+    /* tree */
+    #treepanel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0
+    }
+
+    #treeviewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 0
+    }
+
+    #treestage {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 1000px;
+      height: 760px;
+      transform-origin: center
+    }
+
+    #wires {
+      position: absolute;
+      inset: 0;
+      pointer-events: none
+    }
+
+    .wires .guide {
+      stroke: #2c241a;
+      opacity: .15;
+      stroke-dasharray: 2 5;
+      fill: none;
+      stroke-width: 1.3
+    }
+
+    .wires .ink {
+      stroke: #33281a;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      visibility: hidden
+    }
+
+    .glabel {
+      position: absolute;
+      left: 24px;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-family: 'IM Fell English SC', serif;
+      font-size: 10.5px;
+      letter-spacing: .22em;
+      color: var(--ink3);
+      white-space: nowrap
+    }
+
+    .slot {
+      position: absolute;
+      width: 140px;
+      user-select: none;
+      -webkit-user-select: none
+    }
+
+    .slot .frame {
+      position: relative;
+      height: 112px;
+      background: var(--paper2);
+      border: 1px dashed #b5a179;
+      padding: 8px 6px 5px;
+      transition: .2s;
+      text-align: center
+    }
+
+    .slot .photo {
+      width: 100px;
+      height: 66px;
+      margin: 0 auto;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      place-items: end center;
+      border: 1px solid transparent
+    }
+
+    .slot .photo svg {
+      width: 84px;
+      height: 62px;
+      display: block
+    }
+
+    .sil {
+      fill: #4a3a29
+    }
+
+    .slot .photo.empty {
+      border: 1.5px dashed #b5a179;
+      background: transparent
+    }
+
+    .slot .photo.empty .sil {
+      fill: #2c241a;
+      opacity: .15
+    }
+
+    .slot .pname {
+      display: block;
+      font-family: 'IM Fell English SC', serif;
+      font-size: 12.5px;
+      line-height: 1.15;
+      margin-top: 5px;
+      min-height: 15px;
+      white-space: nowrap;
+      overflow: hidden
+    }
+
+    .slot .pdates {
+      display: block;
+      font-size: 9px;
+      letter-spacing: .06em;
+      color: var(--ink2);
+      line-height: 1.4;
+      min-height: 13px;
+      white-space: nowrap;
+      overflow: hidden
+    }
+
+    .slot .tag {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: .15em;
+      color: var(--ink3);
+      margin-top: 5px
+    }
+
+    .slot.armed .frame {
+      border-style: solid;
+      border-color: #8b744d;
+      background: #fbf5e6
+    }
+
+    .slot.droptarget .frame {
+      border: 1px solid var(--red);
+      background: #fdf7e8;
+      transform: translateY(-3px)
+    }
+
+    .slot.lifting {
+      opacity: .35
+    }
+
+    .slot.spot .frame {
+      border-style: solid;
+      border-color: var(--brass);
+      box-shadow: 0 0 0 3px rgba(160, 127, 60, .3)
+    }
+
+    .slot.contra .frame {
+      border: 1.5px solid var(--red);
+      background: #fbeae2
+    }
+
+    #treestage.annotating .slot .frame {
+      cursor: pointer
+    }
+
+    #treestage.annotating .slot .frame:hover {
+      border-color: #8b744d
+    }
+
+    /* pencil ticks */
+    .marks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: center;
+      margin-top: 6px
+    }
+
+    .mk {
+      font-family: 'Special Elite', monospace;
+      font-size: 8px;
+      color: #6b6557;
+      border: 1px solid #9a8a68;
+      border-radius: 2px;
+      padding: 0 3px;
+      line-height: 12px;
+      background: #f1eee6
+    }
+
+    .tickpop {
+      position: absolute;
+      width: 212px;
+      background: var(--paper2);
+      border: 1px solid #b5a179;
+      box-shadow: 0 6px 18px rgba(40, 25, 10, .35);
+      padding: 10px;
+      z-index: 40;
+      text-align: left
+    }
+
+    .tickpop h5 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 12px;
+      letter-spacing: .08em;
+      margin-bottom: 2px
+    }
+
+    .tickpop .tphint {
+      font-size: 10px;
+      font-style: italic;
+      color: var(--ink3);
+      margin-bottom: 8px
+    }
+
+    .tickgrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px
+    }
+
+    .tickchip {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-family: 'IM Fell English', serif;
+      transition: .12s
+    }
+
+    .tickchip:hover {
+      border-color: var(--ink2)
+    }
+
+    .tickchip.sel {
+      border-color: var(--red);
+      color: var(--red);
+      background: #fdf7ee
+    }
+
+    .tickchip.excl {
+      opacity: .35;
+      text-decoration: line-through;
+      cursor: default
+    }
+
+    .tickchip.excl:hover {
+      border-color: var(--line)
+    }
+
+    .tickpop .tpfoot {
+      display: flex;
+      gap: 6px;
+      margin-top: 9px
+    }
+
+    .tickpop .tpfoot .btn {
+      padding: 4px 8px;
+      font-size: 9px;
+      flex: 1
+    }
+
+    /* pencil hypothesis */
+    .slot.pencil .frame {
+      border: 1.5px dashed #8f8a7c;
+      background: #f1eee6;
+      background-image: repeating-linear-gradient(45deg, transparent 0 7px, rgba(90, 88, 80, .045) 7px 8px);
+      cursor: grab
+    }
+
+    .slot.pencil .photo {
+      background: #dcd8ce !important
+    }
+
+    .slot.pencil .photo svg .sil {
+      fill: #7a7466
+    }
+
+    .slot.pencil .pname {
+      color: var(--graphite);
+      font-family: 'Spectral', serif;
+      font-style: italic
+    }
+
+    /* queried by the audit */
+    .slot.queried .frame {
+      border: 1px solid #c98074;
+      background: #f7ece2
+    }
+
+    .slot .qmark {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      display: none;
+      width: 17px;
+      height: 17px;
+      border: 1.5px solid #b06a55;
+      border-radius: 50%;
+      color: #b06a55;
+      font-size: 10px;
+      line-height: 14px;
+      text-align: center;
+      font-family: 'Special Elite', monospace;
+      transform: rotate(-8deg);
+      background: var(--paper2)
+    }
+
+    .slot.queried .qmark {
+      display: block
+    }
+
+    /* ink — proven */
+    .slot.inked {
+      animation: settle .5s ease
+    }
+
+    .slot.inked .frame {
+      border: 1px solid #a98f63;
+      background: var(--paper2);
+      cursor: pointer;
+      box-shadow: 0 1px 0 #fff inset, 0 2px 6px rgba(80, 60, 30, .14)
+    }
+
+    .slot.inked:nth-child(odd) .frame {
+      transform: rotate(-.7deg)
+    }
+
+    .slot.inked:nth-child(even) .frame {
+      transform: rotate(.6deg)
+    }
+
+    @keyframes settle {
+      0% {
+        transform: scale(1.1)
+      }
+
+      60% {
+        transform: scale(.97)
+      }
+
+      100% {
+        transform: scale(1)
+      }
+    }
+
+    .slot .stamp {
+      position: absolute;
+      top: 4px;
+      right: 5px;
+      display: none;
+      transform: rotate(-11deg);
+      font-family: 'Special Elite', monospace;
+      font-size: 8px;
+      letter-spacing: .1em;
+      color: var(--red);
+      border: 1.5px solid var(--red);
+      border-radius: 2px;
+      padding: 0 4px;
+      opacity: .85
+    }
+
+    .slot.inked .stamp {
+      display: block
+    }
+
+    .slot.born {
+      animation: born .45s both
+    }
+
+    @keyframes born {
+      from {
+        opacity: 0;
+        translate: 0 8px
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    #seal {
+      position: absolute;
+      right: 56px;
+      bottom: 18px;
+      width: 88px;
+      height: 88px;
+      display: grid;
+      place-items: center;
+      background: #93321f;
+      border-radius: 47% 53% 50% 50%/54% 46% 55% 45%;
+      box-shadow: inset 0 2px 6px rgba(255, 220, 190, .35), inset 0 -7px 12px rgba(60, 10, 0, .55), 0 3px 8px rgba(40, 20, 10, .35);
+      transform: scale(0);
+      opacity: 0;
+      pointer-events: none
+    }
+
+    #seal span {
+      font-family: 'IM Fell English SC', serif;
+      font-size: 38px;
+      color: #6b2113;
+      text-shadow: 0 1px 0 rgba(255, 215, 190, .35)
+    }
+
+    #seal::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1.5px solid rgba(80, 18, 8, .5);
+      border-radius: inherit
+    }
+
+    #seal.on {
+      animation: stamp .55s cubic-bezier(.2, 1.4, .4, 1) forwards
+    }
+
+    @keyframes stamp {
+      0% {
+        transform: scale(2.4) rotate(-18deg);
+        opacity: 0
+      }
+
+      62% {
+        transform: scale(.94) rotate(-5deg);
+        opacity: 1
+      }
+
+      100% {
+        transform: scale(1) rotate(-8deg);
+        opacity: 1
+      }
+    }
+
+    /* trunk */
+    #trunk {
+      background: var(--leather);
+      border: 1px solid #1d1610;
+      box-shadow: 0 2px 12px rgba(30, 20, 10, .35) inset;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      color: var(--paper)
+    }
+
+    .brass {
+      flex: none;
+      margin: 12px 14px 0;
+      padding: 5px 10px;
+      text-align: center;
+      background: #ac8d54;
+      color: #3a2c18;
+      font-family: 'IM Fell English SC', serif;
+      font-size: 11px;
+      letter-spacing: .14em;
+      border: 1px solid #7d6236;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 1px 0 rgba(255, 235, 190, .4) inset
+    }
+
+    .trunkhead {
+      padding: 10px 16px 8px;
+      display: flex;
+      align-items: baseline
+    }
+
+    .trunkhead h2 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 17px;
+      letter-spacing: .08em;
+      color: #dcc8a2
+    }
+
+    .trunkhead p {
+      margin-left: auto;
+      font-size: 10.5px;
+      font-style: italic;
+      color: #8f7c5c
+    }
+
+    #doclist {
+      flex: none;
+      padding: 2px 14px 6px;
+      max-height: 46%;
+      overflow-y: auto
+    }
+
+    .doc {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-align: left;
+      margin-bottom: 7px;
+      padding: 9px 11px;
+      background: var(--paper2);
+      color: var(--ink);
+      border: 1px solid #c8b58e;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .28);
+      transition: transform .15s, box-shadow .15s;
+      position: relative
+    }
+
+    .doc:nth-child(odd) {
+      transform: rotate(-.4deg)
+    }
+
+    .doc:nth-child(even) {
+      transform: rotate(.35deg)
+    }
+
+    .doc:not(.locked):hover {
+      transform: rotate(0) translateY(-1px);
+      box-shadow: 0 4px 9px rgba(0, 0, 0, .3)
+    }
+
+    .doc .dicon {
+      flex: none;
+      color: var(--brass);
+      display: grid;
+      place-items: center
+    }
+
+    .doc .dicon svg {
+      width: 19px;
+      height: 19px
+    }
+
+    .doc.locked .dicon {
+      color: #a3947a
+    }
+
+    .doc .dtext b {
+      display: block;
+      font-family: 'IM Fell English', serif;
+      font-weight: 400;
+      font-size: 14.5px;
+      line-height: 1.2
+    }
+
+    .doc .dtext i {
+      display: block;
+      font-size: 10.5px;
+      color: var(--ink3);
+      font-style: italic
+    }
+
+    .doc.locked {
+      background: #d9cdb2;
+      color: #8d7c5e;
+      cursor: help
+    }
+
+    .doc.locked .dtext i {
+      color: #9b8a6c
+    }
+
+    .doc .dmark {
+      flex: none;
+      font-family: 'Special Elite', monospace;
+      font-size: 9px;
+      letter-spacing: .12em;
+      text-transform: uppercase
+    }
+
+    .doc .dmark.new {
+      color: var(--red);
+      border: 1px solid var(--red);
+      padding: 1px 5px;
+      border-radius: 2px;
+      transform: rotate(-4deg)
+    }
+
+    .doc .dmark.read svg {
+      width: 14px;
+      height: 14px;
+      color: #5c6b4a
+    }
+
+    .doc .dmark.clues {
+      color: #7a6850;
+      letter-spacing: .04em;
+      text-transform: none
+    }
+
+    .doc.arrive {
+      animation: arrive .5s ease
+    }
+
+    @keyframes arrive {
+      from {
+        opacity: 0;
+        translate: -12px 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    .ledgerhead {
+      padding: 10px 16px 6px;
+      border-top: 1px solid #46372a;
+      margin-top: 4px
+    }
+
+    .ledgerhead h3 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 14px;
+      letter-spacing: .1em;
+      color: #dcc8a2
+    }
+
+    .ledgerhead p {
+      font-size: 10.5px;
+      font-style: italic;
+      color: #8f7c5c;
+      margin-top: 2px
+    }
+
+    #ledger {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 14px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+      gap: 9px;
+      align-content: start
+    }
+
+    #ledger .empty-note {
+      grid-column: 1/-1;
+      font-style: italic;
+      color: #8f7c5c;
+      font-size: 12.5px;
+      padding: 14px 4px;
+      text-align: center
+    }
+
+    .pcard {
+      position: relative;
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      text-align: left;
+      padding: 8px 9px;
+      background: var(--paper2);
+      color: var(--ink);
+      border: 1px solid #c0ac84;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .3);
+      transition: .18s;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: grab;
+      animation: born .4s both
+    }
+
+    .pcard:hover {
+      translate: 0 -2px;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, .35)
+    }
+
+    .pcard.selected {
+      outline: 2px solid var(--red);
+      translate: 0 -2px;
+      cursor: grabbing
+    }
+
+    .pthumb {
+      flex: none;
+      width: 38px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid #8f7a58;
+      display: grid;
+      place-items: end center;
+      background: #ded6c2
+    }
+
+    .pthumb svg {
+      width: 32px;
+      height: 40px
+    }
+
+    .pinfo b {
+      display: block;
+      font-family: 'IM Fell English', serif;
+      font-weight: 400;
+      font-size: 13px;
+      line-height: 1.15;
+      white-space: nowrap
+    }
+
+    .pinfo i {
+      display: block;
+      font-size: 10px;
+      color: var(--ink2);
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 112px
+    }
+
+    .pcard .stamp {
+      display: none;
+      position: absolute;
+      right: 5px;
+      top: 4px;
+      transform: rotate(-11deg);
+      font-family: 'Special Elite', monospace;
+      font-size: 8px;
+      letter-spacing: .1em;
+      color: #6b6557;
+      border: 1.5px solid #6b6557;
+      padding: 0 4px;
+      border-radius: 2px
+    }
+
+    .pcard.placed {
+      opacity: .7;
+      order: 8
+    }
+
+    .pcard.placed .stamp {
+      display: block
+    }
+
+    .pcard.confirmed {
+      opacity: .55;
+      cursor: default;
+      order: 9
+    }
+
+    .pcard.confirmed .stamp {
+      display: block;
+      color: var(--red);
+      border-color: var(--red)
+    }
+
+    .pcard.confirmed:hover {
+      translate: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .3)
+    }
+
+    .ghost {
+      position: fixed;
+      z-index: 180;
+      pointer-events: none;
+      width: 158px;
+      transform: rotate(-2.5deg) scale(1.04);
+      box-shadow: 0 14px 28px rgba(40, 25, 10, .4);
+      opacity: .96
+    }
+
+    /* overlays */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      background: rgba(24, 18, 10, .58);
+      display: none;
+      overflow-y: auto;
+      padding: 5vh 16px
+    }
+
+    .overlay.open {
+      display: block
+    }
+
+    .card {
+      max-width: 640px;
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid #cdbd97;
+      box-shadow: 0 20px 60px rgba(20, 12, 4, .5);
+      padding: 30px 38px 26px;
+      position: relative;
+      animation: cardin .35s ease
+    }
+
+    @keyframes cardin {
+      from {
+        opacity: 0;
+        translate: 0 14px
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    .rhead {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+      margin-bottom: 16px
+    }
+
+    .rhead .dicon {
+      color: var(--brass)
+    }
+
+    .rhead .dicon svg {
+      width: 21px;
+      height: 21px
+    }
+
+    .rhead h3 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 21px;
+      line-height: 1.1
+    }
+
+    .rhead i {
+      display: block;
+      font-size: 12px;
+      color: var(--ink3);
+      font-style: italic;
+      margin-top: 2px
+    }
+
+    .rclose {
+      margin-left: auto;
+      flex: none
+    }
+
+    .docbody {
+      min-height: 120px
+    }
+
+    .rfoot {
+      border-top: 1px solid var(--line);
+      margin-top: 20px;
+      padding-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .rfoot .lbl {
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--ink3);
+      margin-right: 4px
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      background: var(--paper2);
+      padding: 3px 10px 3px 4px;
+      font-size: 12.5px;
+      font-family: 'IM Fell English', serif
+    }
+
+    .chip .pthumb {
+      width: 20px;
+      height: 24px
+    }
+
+    .chip .pthumb svg {
+      width: 17px;
+      height: 21px
+    }
+
+    .rfoot .btn {
+      margin-left: auto
+    }
+
+    /* document art */
+    .d-hand {
+      font-family: 'Homemade Apple', cursive;
+      font-size: 14.5px;
+      line-height: 2.15;
+      color: #33415e;
+      background: repeating-linear-gradient(transparent 0 30px, rgba(90, 80, 60, .14) 30px 31px);
+      border-left: 1px solid rgba(154, 59, 38, .4);
+      padding-left: 20px
+    }
+
+    .d-hand p {
+      margin-bottom: 2px
+    }
+
+    .d-hand .signed {
+      text-align: right;
+      margin-top: 10px
+    }
+
+    .d-hand.brown {
+      color: #4a3524
+    }
+
+    .d-form h4,
+    .d-book h4,
+    .d-index h4 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 19px;
+      text-align: center;
+      letter-spacing: .08em
+    }
+
+    .d-form h5,
+    .d-book h5,
+    .d-index h5 {
+      font-family: 'Spectral', serif;
+      font-weight: 600;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .28em;
+      text-align: center;
+      color: var(--ink2);
+      margin: 2px 0 16px
+    }
+
+    .form-line {
+      display: flex;
+      gap: 14px;
+      align-items: baseline;
+      border-bottom: 1px dotted #a89372;
+      padding: 8px 2px
+    }
+
+    .form-line b {
+      flex: none;
+      width: 86px;
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: #7a6850;
+      font-weight: 600
+    }
+
+    .form-line span {
+      font-family: 'IM Fell English', serif;
+      font-size: 15.5px;
+      line-height: 1.4
+    }
+
+    .form-seal {
+      position: absolute;
+      right: 26px;
+      bottom: 74px;
+      width: 96px;
+      opacity: .9;
+      transform: rotate(-6deg)
+    }
+
+    .d-type {
+      font-family: 'Special Elite', monospace;
+      font-size: 13px;
+      color: #3a3126;
+      line-height: 1.7
+    }
+
+    .cens-head {
+      font-size: 10.5px;
+      letter-spacing: .08em;
+      margin-bottom: 10px;
+      color: #5c5040
+    }
+
+    .cens-block {
+      margin-bottom: 20px
+    }
+
+    .d-type table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px
+    }
+
+    .d-type th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      text-align: left;
+      color: #5c5040
+    }
+
+    .d-type th,
+    .d-type td {
+      border: 1px solid #8d7b5c55;
+      padding: 5px 10px
+    }
+
+    .errmark {
+      color: var(--red);
+      font-weight: 700
+    }
+
+    .absline {
+      margin: 7px 0
+    }
+
+    .hand-note {
+      font-family: 'Homemade Apple', cursive;
+      font-size: 12.5px;
+      color: #33415e;
+      text-align: right;
+      margin-top: 8px
+    }
+
+    .d-news h4 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 26px;
+      text-align: center;
+      letter-spacing: .04em;
+      border-bottom: 3px double var(--ink);
+      padding-bottom: 4px
+    }
+
+    .news-date {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      text-align: center;
+      color: var(--ink2);
+      border-bottom: 1px solid var(--ink);
+      padding: 4px 0 6px;
+      margin-bottom: 12px
+    }
+
+    .chron-list {
+      max-width: 460px;
+      margin: 0 auto
+    }
+
+    .chron-line {
+      display: flex;
+      gap: 16px;
+      align-items: baseline;
+      padding: 7px 2px;
+      border-bottom: 1px solid rgba(154, 59, 38, .3);
+      font-family: 'IM Fell English', serif;
+      font-size: 14.5px
+    }
+
+    .chron-line b {
+      flex: none;
+      width: 34px;
+      font-weight: 400
+    }
+
+    .chron-line i {
+      color: var(--ink2)
+    }
+
+    .book-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: baseline;
+      border-bottom: 1px solid rgba(154, 59, 38, .45);
+      padding: 8px 2px;
+      font-family: 'IM Fell English', serif;
+      font-size: 15.5px
+    }
+
+    .book-line i {
+      font-size: 13.5px;
+      color: var(--ink2);
+      text-align: right
+    }
+
+    .book-note {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: var(--ink3);
+      text-align: center;
+      margin-top: 16px
+    }
+
+    .indexline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 2px;
+      border-bottom: 1px solid rgba(154, 59, 38, .25);
+      font-family: 'IM Fell English', serif;
+      font-size: 15px
+    }
+
+    .indexline .dthumb {
+      width: 22px;
+      height: 27px;
+      display: inline-grid;
+      place-items: end center;
+      flex: none
+    }
+
+    .indexline .dthumb svg {
+      width: 18px;
+      height: 23px
+    }
+
+    .indexline i {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--ink3);
+      font-style: italic;
+      text-align: right
+    }
+
+    .provline {
+      font-family: 'Special Elite', monospace;
+      font-size: 10.5px;
+      color: #8a7a5c;
+      border-top: 1px dashed #c3b28c;
+      margin-top: 16px;
+      padding-top: 8px;
+      text-align: center
+    }
+
+    /* executor's question */
+    .executor {
+      border: 1px solid var(--line);
+      background: var(--paper2);
+      padding: 16px 18px;
+      margin-top: 18px;
+      text-align: center
+    }
+
+    .executor h4 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      letter-spacing: .08em;
+      font-size: 15px;
+      margin-bottom: 6px
+    }
+
+    .executor p {
+      font-size: 14px;
+      font-style: italic;
+      color: #42382a;
+      margin-bottom: 12px
+    }
+
+    .exrow {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap
+    }
+
+    /* worksheet */
+    .wscroll {
+      overflow-x: auto
+    }
+
+    .wtable {
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin: 0 auto
+    }
+
+    .wtable th,
+    .wtable td {
+      border: 1px solid #d0c09a;
+      padding: 3px 4px;
+      text-align: center;
+      min-width: 27px;
+      height: 24px
+    }
+
+    .wtable th {
+      font-family: 'IM Fell English', serif;
+      font-weight: 400;
+      background: var(--paper2);
+      font-size: 10px
+    }
+
+    .wtable th.wrow {
+      text-align: left;
+      font-family: 'IM Fell English', serif;
+      white-space: nowrap;
+      padding: 3px 10px 3px 6px;
+      font-size: 11.5px;
+      min-width: 128px
+    }
+
+    .wtable td {
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Special Elite', monospace
+    }
+
+    .wtable td.wex {
+      color: #c2b494;
+      background: #efe8d4
+    }
+
+    .wtable td.wtick {
+      background: #fdf7ee;
+      color: var(--red);
+      font-weight: 700
+    }
+
+    .wtable td.wsk {
+      background: #dcd8ce;
+      color: var(--graphite)
+    }
+
+    .wtable td.wink {
+      background: var(--ink);
+      color: var(--paper);
+      cursor: default
+    }
+
+    .wtable tr.whover:hover td:not(.wink) {
+      background: #f3ecd8
+    }
+
+    .wlegend {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--ink2);
+      font-family: 'Special Elite', monospace
+    }
+
+    .wlegend b {
+      font-weight: 400
+    }
+
+    /* person sheet */
+    .sheet-top {
+      display: flex;
+      gap: 20px;
+      align-items: center
+    }
+
+    .sheet-photo {
+      flex: none;
+      width: 96px;
+      height: 118px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid #8f7a58;
+      display: grid;
+      place-items: end center;
+      box-shadow: inset 0 -8px 14px rgba(74, 58, 41, .3)
+    }
+
+    .sheet-photo svg {
+      width: 82px;
+      height: 104px
+    }
+
+    .sheet-dates {
+      font-size: 12px;
+      letter-spacing: .1em;
+      color: var(--ink2);
+      line-height: 1.7
+    }
+
+    .bio {
+      margin-top: 18px;
+      font-size: 14.5px;
+      line-height: 1.75;
+      border-top: 1px solid var(--line);
+      padding-top: 14px
+    }
+
+    .sheet-ins {
+      font-style: italic;
+      color: #8a6a2f;
+      font-size: 13px;
+      margin-top: 10px
+    }
+
+    .src {
+      margin-top: 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--ink3)
+    }
+
+    /* intro */
+    .intro-card {
+      max-width: 580px;
+      text-align: center
+    }
+
+    .intro-card h2 {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      font-size: 32px;
+      border-bottom: 3px double var(--ink);
+      padding-bottom: 12px
+    }
+
+    .intro-loc {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .3em;
+      color: var(--ink3);
+      margin-bottom: 14px
+    }
+
+    .intro-card>p {
+      font-size: 14.5px;
+      line-height: 1.8;
+      margin: 16px 0 20px;
+      color: #42382a
+    }
+
+    .steps {
+      text-align: left;
+      margin: 0 auto 20px;
+      max-width: 460px
+    }
+
+    .steps li {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+      padding: 7px 0;
+      border-bottom: 1px dotted #c3b28c;
+      font-size: 13.5px;
+      line-height: 1.5;
+      list-style: none
+    }
+
+    .steps b {
+      font-family: 'IM Fell English', serif;
+      font-weight: 400;
+      font-size: 18px;
+      color: var(--brass);
+      flex: none;
+      width: 18px
+    }
+
+    .verif {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--ink3);
+      margin: 0 auto 14px;
+      max-width: 460px
+    }
+
+    .diffrow {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 0 0 6px;
+      flex-wrap: wrap
+    }
+
+    .diffbtn {
+      border: 1px solid var(--line);
+      background: var(--paper2);
+      padding: 9px 12px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      transition: .15s;
+      min-width: 150px
+    }
+
+    .diffbtn small {
+      display: block;
+      text-transform: none;
+      letter-spacing: 0;
+      font-style: italic;
+      color: var(--ink3);
+      margin-top: 3px;
+      font-size: 10px
+    }
+
+    .diffbtn:hover {
+      border-color: var(--ink2)
+    }
+
+    .diffbtn.sel {
+      border-color: var(--red);
+      color: var(--red);
+      background: #fdf7ee
+    }
+
+    .diffbtn.sel small {
+      color: #b56a4f
+    }
+
+    .seedrow {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin: 16px 0 6px;
+      font-size: 12px;
+      color: var(--ink2);
+      flex-wrap: wrap
+    }
+
+    .seedin {
+      border: 1px solid var(--line);
+      background: var(--paper2);
+      padding: 7px 10px;
+      width: 160px;
+      font-family: 'Special Elite', monospace;
+      font-size: 13px;
+      color: var(--ink);
+      text-align: center
+    }
+
+    .compose-lbl {
+      font-family: 'IM Fell English SC', serif;
+      letter-spacing: .1em;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--ink2);
+      margin-top: 14px
+    }
+
+    .recs {
+      font-size: 11.5px;
+      color: var(--ink3);
+      font-style: italic;
+      margin: 4px 0 14px
+    }
+
+    .finstats {
+      text-align: center;
+      border-top: 3px double var(--ink);
+      margin-top: 22px;
+      padding-top: 12px
+    }
+
+    .finstats span {
+      display: block;
+      font-family: 'IM Fell English SC', serif;
+      font-size: 16px
+    }
+
+    .finstats span+span {
+      font-family: 'Spectral', serif;
+      font-size: 12px;
+      color: var(--ink2);
+      letter-spacing: .06em;
+      margin-top: 4px
+    }
+
+    .finbtns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+      flex-wrap: wrap
+    }
+
+    /* case notes */
+    .nh {
+      font-family: 'IM Fell English SC', serif;
+      font-weight: 400;
+      letter-spacing: .1em;
+      font-size: 14px;
+      margin: 18px 0 8px;
+      color: var(--ink2)
+    }
+
+    .nh:first-child {
+      margin-top: 0
+    }
+
+    .mut {
+      font-style: italic;
+      color: var(--ink3);
+      font-size: 13px
+    }
+
+    .chiprow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px
+    }
+
+    .note-line {
+      display: flex;
+      gap: 10px;
+      padding: 7px 2px;
+      border-bottom: 1px dotted #c3b28c;
+      align-items: flex-start;
+      font-size: 13.5px;
+      line-height: 1.5
+    }
+
+    .note-line .txt {
+      flex: 1;
+      cursor: pointer;
+      text-align: left
+    }
+
+    .note-line .txt:hover {
+      color: var(--red)
+    }
+
+    .note-line .box {
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid var(--ink2);
+      flex: none;
+      margin-top: 3px;
+      border-radius: 2px;
+      transition: .15s
+    }
+
+    .note-line .box:hover {
+      border-color: var(--ink)
+    }
+
+    .note-line.done .box {
+      background: var(--ink);
+      border-color: var(--ink)
+    }
+
+    .note-line.done .txt {
+      text-decoration: line-through;
+      color: var(--ink3)
+    }
+
+    .notes-doc {
+      margin-bottom: 14px
+    }
+
+    .notes-doc h5 {
+      font-family: 'IM Fell English', serif;
+      font-weight: 400;
+      font-style: italic;
+      font-size: 12.5px;
+      color: var(--brass);
+      margin-bottom: 2px
+    }
+
+    .notes-foot {
+      border-top: 1px solid var(--line);
+      margin-top: 16px;
+      padding-top: 12px;
+      font-size: 10.5px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .notes-foot .btn {
+      margin-left: auto
+    }
+
+    /* toasts */
+    #toasts {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 160;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      pointer-events: none
+    }
+
+    .toast {
+      background: var(--paper2);
+      border: 1px solid #c8b58e;
+      border-left: 3px solid var(--red);
+      color: var(--ink);
+      padding: 9px 18px;
+      font-size: 13px;
+      box-shadow: 0 6px 18px rgba(30, 20, 8, .3);
+      max-width: 440px;
+      animation: tin .3s ease;
+      font-family: 'IM Fell English', serif
+    }
+
+    .toast.out {
+      opacity: 0;
+      transition: opacity .4s
+    }
+
+    @keyframes tin {
+      from {
+        opacity: 0;
+        translate: 0 10px
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    @media (max-width:1020px) {
+      body {
+        overflow: auto
+      }
+
+      main {
+        grid-template-columns: 1fr;
+        height: auto
+      }
+
+      #treepanel {
+        height: 74vh;
+        min-height: 520px
+      }
+
+      #doclist {
+        max-height: none
+      }
+
+      #ledger {
+        max-height: 340px
+      }
+
+      .mh-stats {
+        margin-left: 0
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      * {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header id="masthead">
+    <div>
+      <h1>The Family Archive</h1>
+      <p class="sub">a procedural genealogy deduction game — every trunk holds a different family, and a different story
+      </p>
+    </div>
+    <div class="mh-stats">
+      <div class="stat"><b id="st-sketched">0 / 11</b><span>sketched</span></div>
+      <div class="stat"><b id="st-confirmed">0 / 11</b><span>confirmed in ink</span></div>
+      <div class="stat"><b id="st-clues">0 / 0</b><span>clues noted</span></div>
+    </div>
+    <div class="mh-actions">
+      <button class="icobtn" id="btn-notes" aria-label="Case notes" title="Case notes (N)"></button>
+      <button class="icobtn" id="btn-whisper" aria-label="Ask for a whisper"
+        title="A whisper from the attic (H)"></button>
+      <button class="icobtn" id="btn-sound" aria-label="Toggle sound" title="Sound"></button>
+      <button class="icobtn" id="btn-restart" aria-label="Restart this trunk" title="Restart this trunk"></button>
+      <button class="icobtn" id="btn-new" aria-label="A different trunk" title="A different trunk"></button>
+    </div>
+    <div id="prog"></div>
+  </header>
+
+  <main>
+    <section id="treepanel" class="panel">
+      <div class="panelhead">
+        <h2>The Family Tree</h2>
+        <p id="treehint"></p>
+        <button class="btn" id="btn-worksheet">Worksheet</button>
+        <button class="btn" id="btn-ticks">Pencil ticks</button>
+        <button class="btn" id="btn-eraser">Erase pencil</button>
+        <button class="btn" id="btn-xcheck">Cross-check</button>
+        <button class="btn" id="btn-audit">Audit the ledger</button>
+      </div>
+      <div id="treeviewport">
+        <div id="treestage">
+          <svg id="wires" class="wires" width="1000" height="760" viewBox="0 0 1000 760"></svg>
+          <div id="seal"><span>H</span></div>
+        </div>
+      </div>
+    </section>
+
+    <aside id="trunk">
+      <div class="brass" id="brass-plate">TRUNK</div>
+      <div class="trunkhead">
+        <h2>The Trunk</h2>
+        <p>click a paper to examine it</p>
+      </div>
+      <div id="doclist"></div>
+      <div class="ledgerhead">
+        <h3>Index of Names</h3>
+        <p id="ledgerhint"></p>
+      </div>
+      <div id="ledger"></div>
+    </aside>
+  </main>
+
+  <div class="overlay" id="reader">
+    <div class="card" id="reader-card"></div>
+  </div>
+  <div class="overlay" id="psheet">
+    <div class="card" id="psheet-card"></div>
+  </div>
+  <div class="overlay" id="notes">
+    <div class="card" id="notes-card"></div>
+  </div>
+  <div class="overlay" id="wksheet">
+    <div class="card" id="wksheet-card"></div>
+  </div>
+  <div class="overlay open" id="intro" style="z-index:140">
+    <div class="card intro-card" id="intro-card"></div>
+  </div>
+
+  <div id="toasts"></div>
+
+  <script>
+    /* ================================================================
+       1. seeded rng — every trunk number regenerates the same family,
+          the same puzzle, and the same story
+    ================================================================ */
+    let rng = Math.random;
+    function mulberry32(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    const R = (a, b) => a + Math.floor(rng() * (b - a + 1));
+    const PK = a => a[ Math.floor(rng() * a.length) ];
+    function shuf(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1));[ a[ i ], a[ j ] ] = [ a[ j ], a[ i ] ]; } return a; }
+
+    /* ================================================================
+       2. world pools
+    ================================================================ */
+    const SURNAMES = [ 'Fairhurst', 'Bellamy', 'Ashcombe', 'Whitlock', 'Merridew', 'Halloway', 'Crabtree', 'Thorne', 'Ellerby', 'Pargeter', 'Netherby', 'Southerden' ];
+    const MAIDENS = [ 'Tredwell', 'Ampthill', 'Sorrell', 'Finch', 'Parkes', 'Quill', 'Hale', 'Marchmont', 'Otterly', 'Voss', 'Kemble', 'Draycott' ];
+    const M_FIRST = [ 'Edmund', 'Walter', 'Frank', 'George', 'Arthur', 'Silas', 'Frederick', 'Charles', 'Henry', 'Ernest', 'Reuben', 'Barnaby', 'Albert', 'Josiah', 'Wilfred', 'Oscar' ];
+    const F_FIRST = [ 'Ada', 'June', 'Vivian', 'Clara', 'Eleanor', 'Beatrice', 'Edith', 'Florence', 'Harriet', 'Louisa', 'Mabel', 'Agnes', 'Cecily', 'Winifred', 'Sylvia', 'Dorothy', 'Lydia', 'Marigold' ];
+    const TOWNS = [ 'Wrenford', 'Pencombe', 'Ashmere', 'Marlowe', 'Hethersett', 'Chalton' ];
+    const STREETS = [ 'Priory Row', 'Ashford Lane', 'Mill Yard', "Chandler's Walk", 'Beck Court', 'Tannery Lane' ];
+    const OCC_M = [ 'railway clerk', 'toll keeper', 'bookseller', 'chemist', 'stationmaster', 'watchmaker', 'blacksmith', 'corn merchant', 'carpenter', 'verger' ];
+    const OCC_F = [ 'schoolmistress', 'postmistress', 'seamstress', 'organist', 'linen draper' ];
+    const EVENTS = [
+      { n: 'the great flood', c: 'the Beck burst its banks and the lower lane went under' },
+      { n: 'the chapel fire', c: 'a chimney spark; the roof was re-slated by autumn' },
+      { n: 'the year the comet passed', c: 'the whole road stood out at midnight, collars up' },
+      { n: 'the great storm', c: 'tiles everywhere, and the chapel clock stopped at ten to' },
+      { n: 'the year the elm came down', c: 'a creak, a crack, and half the shade of the lane was gone' },
+      { n: 'the colliery strike', c: 'the lamp procession, and tins at every door' },
+      { n: 'the year the iron bridge opened', c: 'the first crossing that did not mind the weather' },
+      { n: 'the year the circus came', c: 'a torn poster still stuck under the lamppost paint' },
+      { n: 'the hard frost', c: 'birds on the doorstep, bold as landlords' }
+    ];
+
+    /* ================================================================
+       2a. narrative pools — house, motif, voice, nicknames,
+          provenance, eras, and the cast layer: birth months, traits,
+          couple anecdotes, the family motto, named rooms.
+    ================================================================ */
+    const HOUSES = [ 'Ivy Cottage', 'The Elms', 'Rosebank', 'Orchard House', 'Fernlea', 'Holly Bank', 'The Cedars', 'Glen View', 'The Corner House', 'The Old Bakehouse' ];
+    const MOTIFS = [
+      {
+        name: 'the seed-cake recipe',
+        letter: 'the seed-cake recipe still hangs by the pantry hook, worn soft at every fold',
+        keeps: 'a second copy of the seed-cake recipe, annotated in three generations of hands',
+        epi: 'The seed-cake recipe is yours now. Follow it badly, then better, then by heart — that is how a family is kept.'
+      },
+      {
+        name: 'the christening gown',
+        letter: 'the christening gown is in its tissue paper on the landing shelf, patient as ever',
+        keeps: 'a spare length of the gown\u2019s Brussels net, snipped off years ago and saved anyway',
+        epi: 'The christening gown goes back in its tissue, four generations long — and, one day, a fifth.'
+      },
+      {
+        name: 'the kitchen clock',
+        letter: 'the kitchen clock still says twenty past four, and has for as long as anyone can say',
+        keeps: 'the clock\u2019s old winding key, kept in the drawer though the clock no longer needs winding',
+        epi: 'Nobody ever fixed the kitchen clock, and nobody ever will. Some things a family keeps exactly as they were.'
+      },
+      {
+        name: 'the violin in the green case',
+        letter: 'the violin sleeps in its green case on the wardrobe, strings gone quiet years ago',
+        keeps: 'a broken E string, coiled in paper — someone meant to have it seen to',
+        epi: 'The violin stays in the attic, strings slack, waiting for hands that know it. Waiting is also keeping.'
+      },
+      {
+        name: 'the pressed violet',
+        letter: 'the violet pressed in the old hymn book has kept its colour, more or less, under a century of glass',
+        keeps: 'the hymn book itself, its spine stencilled with initials nobody can now place',
+        epi: 'The violet is still violet, more or less. Pressed things keep; so, it turns out, do families.'
+      },
+      {
+        name: 'the russet tree',
+        letter: 'the russet at the back still fruits, spiteful and generous in the same season',
+        keeps: 'a jam-pot label from the russet year, the ink faded to rust',
+        epi: 'The russet still fruits. Whoever comes after will complain of the wasps, as is tradition — and that, too, is how a family keeps.'
+      }
+    ];
+    const VOICES = [
+      {
+        id: 'sharp',
+        sign: a => `— ${a}, who was right, as usual`,
+        interject: 'She was always right. It was exhausting, and we loved her for it.',
+        aside: 'I shall say it plainly; subtlety is for people with more time than me.',
+        epiClose: 'Well done. I would have said it to your face, and been brisk about it.'
+      },
+      {
+        id: 'wistful',
+        sign: a => `— ever your aunt, ${a}`,
+        interject: 'How the summers fold into one another, at my age.',
+        aside: 'Forgive an old woman her meanderings; the road there is half the errand.',
+        epiClose: 'Thank you, dear. The house feels lighter tonight, as if a page turned somewhere.'
+      },
+      {
+        id: 'formal',
+        sign: a => `— Yours faithfully, ${a}`,
+        interject: 'I have set these matters down in order, as far as my memory allows.',
+        aside: 'I keep to what is certain; where I am not certain, I have said so.',
+        epiClose: 'The record is complete. I find that satisfactory — and I do not say that often.'
+      }
+    ];
+    const NICKS = [ 'Nan', 'Bee', 'Poppa', 'Dell', 'Tod', 'Min', 'Cissie', 'Bo', 'Gus', 'Pet' ];
+    const PROVS = {
+      index: [ 'found in a foolscap folder, tied with green ribbon', 'the first thing on top when the lid came off', 'folded around a stray hairpin, of all things' ],
+      housebook: [ 'the key was under the third flowerpot, as ever', 'came out with the winter coats' ],
+      chronicle: [ 'cut from the paper and pasted to card, crooked', 'folded to the size of a stamp and back again' ],
+      memory: [ 'kept in the side pocket, corner-worn from handling', 'in its original envelope, never posted' ],
+      census: [ 'creased into eighths, as if posted', 'smelling faintly of pipe smoke', 'a coffee ring at one corner, decades old' ],
+      census01: [ 'water-stained and brittle at the folds', 'damp has welded two pages into one' ],
+      register: [ 'in the solicitor\u2019s fair hand, copied for the family', 'pressed flat between two boards' ],
+      abstract: [ 'loose leaves, tally-marks marching up the margin', 'the clerk\u2019s own file copy, never sent on' ],
+      directory: [ 'spine gone, pages fanned like a hand of cards', 'two editions bound by someone meaning to keep track' ],
+      letter: [ 'folded twice, addressed to no one', 'kept with the button tin' ],
+      album: [ 'spine cracked open at the good pages', 'a dried petal slipped between the leaves' ],
+      parish: [ 'in the vicar\u2019s copying hand, faint as breath', 'a loose bookmark of greencloth inside' ],
+      keepsake: [ 'wrapped in the newspaper that once held it', 'kept in the flour tin, which explains the dust' ],
+      postscript: [ 'tucked inside the back cover, as if left in a hurry', 'loose, and folded around nothing' ],
+      epilogue: [ 'sealed, and marked for the one who finished the tree', 'under the tray, beneath everything, deliberately last' ]
+    };
+    const ERAS = [
+      { y: 1901, t: 'the year the old queen died, and the century turned without ceremony' },
+      { y: 1912, t: 'the year the great ship went down, talked of at every table for a decade' },
+      { y: 1916, t: 'the war years, when the young men left and some of them came home' },
+      { y: 1918, t: 'the armistice, when the village cried in the street and blamed the cold' },
+      { y: 1935, t: 'the jubilee, when bunting ran from the chapel to the corner' },
+      { y: 1940, t: 'the blacked-out windows, and the wireless that was never off' },
+      { y: 1945, t: 'the peace, when the bonfires went up and the siren finally meant nothing' },
+      { y: 1953, t: 'the coronation summer, the whole lane crowded round one small television' },
+      { y: 1966, t: 'the summer the street argued about a football match, and never stopped' }
+    ];
+    const MONTH_NAMES = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+    const TRAITS_F = [ 'known for her thrift', 'with a famously sharp memory for slights', 'who could mend anything with thread and patience', 'with strong opinions about roses', 'who sang while she worked, always a half-tone flat', 'the fastest walker in three parishes', 'who never once missed a market day', 'with a laugh that carried down the lane' ];
+    const TRAITS_M = [ 'punctual to the minute, his whole life', 'with ink-stained cuffs and no apologies', 'who whistled through his teeth when thinking', 'famed for his apple trees', 'who kept every receipt he was ever given', 'with a handshake like a gate latch', 'quiet, except about the weather', 'who read aloud at every christening, asked or not' ];
+    const TRAIT_Y = [ 'the one who asks questions', 'the keeper of photographs, so far', 'with your grandmother\u2019s way of raising one eyebrow' ];
+    const ANECDOTES = [
+      'For all their married life they quarrelled cheerfully about the correct way to make tea; neither ever won, and both would have been lost without the argument.',
+      'He proposed twice — she said no the first time, on principle, just to see whether he meant it.',
+      'They kept a shared diary for one winter, passing it across the breakfast table; it survives, and settles nothing.',
+      'Their first acquisition together was a second-hand armchair with a wobbly leg; they kept it forty years out of loyalty.',
+      'They never once travelled further apart than a day\u2019s walk, and liked it that way.' ];
+    const MOTTOS = [ '&ldquo;Keep what matters; label the rest.&rdquo;', '&ldquo;Measure twice, mourn once, mend always.&rdquo;', '&ldquo;Every guest fed; every record kept.&rdquo;', '&ldquo;The truth, eventually, and in ink.&rdquo;', '&ldquo;What is written down cannot be lost twice.&rdquo;' ];
+    const ROOMS = [ 'the pantry', 'the linen cupboard', 'the desk in the parlour', 'the attic box', 'the drawer under the stairs', 'the cedar chest', 'the shelf above the range' ];
+    const ROOMFLAV = [ 'behind everything else', 'under a false bottom of doilies', 'wrapped in a tea towel', 'under three layers of Christmas paper, out of season', 'with the key still in it' ];
+    const ROOMITEMS = [ 'preserves in strict rows', 'the button tin, rattling', 'linen, lavender, and one dead moth', 'boots by size, oldest first', 'a chair nobody will throw away', 'the good china, used never' ];
+
+    /* ================================================================
+       2b. trunk composer — which families of reasoning a trunk may
+          demand. Pins and eliminations are always in; the rest is
+          the player's choice, persisted between sessions.
+    ================================================================ */
+    const COMPOSE_KEY = 'family-archive-compose-v1';
+    const COMPOSE_DEFS = [
+      { id: 'count', label: 'Counting sweeps' },
+      { id: 'ordinal', label: 'The age roll' },
+      { id: 'sum', label: 'Arithmetic totals' },
+      { id: 'either', label: 'Either/or photos' },
+      { id: 'xor', label: 'Only-one-of-two' },
+      { id: 'implies', label: 'If\u2013then letters' },
+      { id: 'order', label: 'Orderings' },
+      { id: 'pair', label: 'Matching years' },
+      { id: 'error', label: 'The misprint' }
+    ];
+    function loadCompose() {
+      try { const j = JSON.parse(localStorage.getItem(COMPOSE_KEY)); if (Array.isArray(j)) return new Set(j); } catch (e) { }
+      return new Set(COMPOSE_DEFS.map(d => d.id));
+    }
+    let COMPOSE = loadCompose();
+    function saveCompose() { try { localStorage.setItem(COMPOSE_KEY, JSON.stringify([ ...COMPOSE ])) } catch (e) { } }
+
+    /* ================================================================
+       3. skeleton — 11 frames, 4 generations
+    ================================================================ */
+    const FK = [ 'h1', 'w1', 'h2', 'w2', 'c1', 'c2', 'c3', 'c4', 'c5', 'e1', 'you' ];
+    const FI = {}; FK.forEach((k, i) => FI[ k ] = i);
+    const SLOTS = {
+      h1: { x: 115, y: 24 }, w1: { x: 275, y: 24 }, h2: { x: 585, y: 24 }, w2: { x: 745, y: 24 },
+      c2: { x: 155, y: 224 }, c1: { x: 335, y: 224 }, c3: { x: 495, y: 224 },
+      c5: { x: 155, y: 424 }, c4: { x: 335, y: 424 }, e1: { x: 495, y: 424 },
+      you: { x: 435, y: 596 }
+    };
+    const CAPTIONS = {
+      h1: 'great-grandfather', w1: 'great-grandmother', h2: 'great-grandfather', w2: 'great-grandmother',
+      c1: 'grandfather', c2: 'great-aunt', c3: 'grandmother', c4: 'father', c5: 'aunt', e1: 'mother', you: 'your own frame'
+    };
+    const COUPLES = [ [ 'h1', 'w1' ], [ 'h2', 'w2' ], [ 'c1', 'c3' ], [ 'c4', 'e1' ] ];
+    const CHILDREN = [
+      { p: [ 'h1', 'w1' ], c: [ 'c2', 'c1' ], g: 3 }, { p: [ 'h2', 'w2' ], c: [ 'c3' ], g: 3 },
+      { p: [ 'c1', 'c3' ], c: [ 'c5', 'c4' ], g: 2 }, { p: [ 'c4', 'e1' ], c: [ 'you' ], g: 1 }
+    ];
+    const TONES = { h1: '#c9b08a', w1: '#d3ba97', h2: '#c6ad85', w2: '#ccb28c', c1: '#c8af87', c2: '#d1b892', c3: '#d6bd9a', c4: '#c3a97f', c5: '#d0b794', e1: '#cbb18f', you: '#e2cda6' };
+    const ORD = n => n === 1 ? 'first' : n === 2 ? 'second' : n === 3 ? 'third' : n === 4 ? 'fourth' : n === 5 ? 'fifth' : 'sixth';
+    function seasonPhen() { const m = new Date().getMonth(); return (m < 2 || m === 11) ? 'woodsmoke' : m < 5 ? 'green sap and rain' : m < 8 ? 'warm dust and cut grass' : 'leaf-smoke'; }
+
+    /* ================================================================
+       4. world generation (all constraints guarded, deterministic)
+    ================================================================ */
+    function genWorld() {
+      for (let t = 0; t < 300; t++)
+      {
+        const S = PK(SURNAMES); const usedS = new Set([ S ]);
+        const maiden = () => { let m; do { m = PK(MAIDENS) } while (usedS.has(m)); usedS.add(m); return m; };
+        const seenF = new Set(), seenM = new Set();
+        const mf = () => { let n; do { n = PK(M_FIRST) } while (seenM.has(n)); seenM.add(n); return n; };
+        const ff = () => { let n; do { n = PK(F_FIRST) } while (seenF.has(n)); seenF.add(n); return n; };
+        const towns = shuf(TOWNS), streets = shuf(STREETS), occs = shuf(OCC_M), foccs = shuf(OCC_F);
+        const h1b = R(1874, 1884), w1b = h1b + R(-4, 4);
+        const m1 = Math.max(h1b, w1b) + R(20, 25);
+        if (m1 - w1b < 18 || m1 > 1905) continue;
+        const c1b = m1 + R(1, 3);
+        let c2b = c1b + R(-4, 4);
+        if (c2b < m1) c2b = m1 + R(0, 2);
+        if (c2b > 1910) c2b = 1910;
+        const h2b = R(1872, 1884), w2b = h2b + R(-4, 4);
+        const m2 = Math.max(h2b, w2b) + R(20, 25);
+        if (m2 - w2b < 18 || m2 > 1905) continue;
+        const c3b = m2 + R(1, 3);
+        const m3 = Math.max(c1b, c3b) + R(21, 28);
+        const c4b = m3 + R(1, 4), c5b = c4b + R(1, 4);
+        const m4 = c4b + R(23, 28), e1b = m4 - R(20, 26), youb = m4 + R(1, 3);
+        if (youb < 1944 || youb > 1974) continue;
+        const h1d = Math.max(h1b + R(58, 84), m1 + 52);
+        const w1d = Math.max(w1b + R(66, 92), c5b + R(3, 14));
+        const h2d = h2b + R(55, 86), w2d = w2b + R(60, 90);
+        if (Math.max(h1d, w1d, h2d, w2d) > 2005) continue;
+        const P = {
+          h1: { key: 'h1', sex: 'm', first: mf(), sur: S, b: h1b, d: h1d, occ: occs[ 0 ], place: towns[ 0 ], street: streets[ 0 ], mar: m1, yrs: R(26, 44) },
+          w1: { key: 'w1', sex: 'f', first: ff(), sur: maiden(), b: w1b, d: w1d, mar: m1 },
+          h2: { key: 'h2', sex: 'm', first: mf(), sur: S, b: h2b, d: h2d, occ: occs[ 1 ], place: towns[ 1 ], street: streets[ 1 ], mar: m2, yrs: R(24, 42) },
+          w2: { key: 'w2', sex: 'f', first: ff(), sur: maiden(), b: w2b, d: w2d, mar: m2 },
+          c1: { key: 'c1', sex: 'm', first: mf(), sur: S, b: c1b, occ: occs[ 2 ], mar: m3, yrs: R(22, 40) },
+          c2: { key: 'c2', sex: 'f', first: ff(), sur: S, b: c2b, occ: foccs[ 0 ], yrs: R(20, 38) },
+          c3: { key: 'c3', sex: 'f', first: ff(), sur: S, b: c3b, occ: foccs[ 1 ], mar: m3, yrs: R(20, 36) },
+          c4: { key: 'c4', sex: 'm', first: mf(), sur: S, b: c4b, occ: occs[ 3 ], mar: m4, yrs: R(18, 40) },
+          c5: { key: 'c5', sex: 'f', first: ff(), sur: S, b: c5b },
+          e1: { key: 'e1', sex: 'f', first: ff(), sur: maiden(), b: e1b, occ: foccs[ 2 ], place: towns[ 2 ], mar: m4 },
+          you: { key: 'you', sex: 'f', first: ff(), sur: S, b: youb }
+        };
+        let auntFirst; do { auntFirst = PK(F_FIRST) } while (Object.values(P).some(p => p.first === auntFirst));
+        const couples = [ [ 'h1', 'w1', m1 ], [ 'h2', 'w2', m2 ], [ 'c1', 'c3', m3 ], [ 'c4', 'e1', m4 ] ];
+        const evPool = shuf(EVENTS), events = [];
+        shuf([ 'h1', 'w1', 'h2', 'w2', 'c1', 'c2', 'c3', 'c5' ]).slice(0, R(2, 3)).forEach(k => events.push({ e: evPool.pop(), year: P[ k ].b, person: k }));
+        const wc = PK(couples.slice(0, 3));
+        events.push({ e: evPool.pop(), year: wc[ 2 ], couple: wc[ 0 ] });
+        let decoy = R(1876, 1962), guard = 0;
+        while (events.some(ev => Math.abs(ev.year - decoy) < 3) && guard++ < 200) decoy = R(1876, 1962);
+        events.push({ e: evPool.pop(), year: decoy });
+        events.sort((a, b) => a.year - b.year);
+        const ev2 = events.map(ev => ({ name: ev.e.n, clause: ev.e.c, year: ev.year, person: ev.person, couple: ev.couple }));
+        return { S, P, auntFirst, events: ev2, towns, streets, trunkNo: SEED || 0, couples };
+      }
+      return null;
+    }
+
+    /* ================================================================
+       4a. narrative generation — deterministic from the same seed.
+          The story (facts and cast alike) grows with the family.
+    ================================================================ */
+    function genNarr(w) {
+      const house = PK(HOUSES);
+      const motif = PK(MOTIFS);
+      const voice = PK(VOICES);
+      const cand = shuf([ 'w1', 'w2', 'c2', 'c3', 'e1', 'c5', 'h1', 'h2' ]).slice(0, R(2, 3));
+      const nicks = {}; const npool = shuf(NICKS);
+      cand.forEach((k, i) => nicks[ k ] = npool[ i ]);
+      const P = w.P;
+      const minY = Math.min(...Object.values(P).map(p => p.b)) - 2;
+      const maxY = Math.max(...Object.values(P).map(p => p.d || p.b)) + 2;
+      const eras = ERAS.filter(e => e.y >= minY && e.y <= maxY);
+      /* cast layer */
+      const months = {}; FK.forEach(k => months[ k ] = MONTH_NAMES[ R(0, 11) ]);
+      const tF = shuf(TRAITS_F), tM = shuf(TRAITS_M);
+      const traits = {}; let fi = 0, mi = 0;
+      FK.forEach(k => { if (k === 'you') return; traits[ k ] = P[ k ].sex === 'm' ? tM[ mi++ % tM.length ] : tF[ fi++ % tF.length ]; });
+      traits.you = PK(TRAIT_Y);
+      const anecdotes = {};
+      shuf(ANECDOTES).slice(0, 4).forEach((an, i) => { anecdotes[ [ 'h1', 'h2', 'c1', 'c4' ][ i ] ] = an; });
+      const motto = PK(MOTTOS);
+      const rooms = shuf(ROOMS).slice(0, 4);
+      const psAuthor = PK([ 'c5', 'e1', 'w2', 'c2' ]);
+      return {
+        house, motif, voice, nicks,
+        era: eras.length ? PK(eras) : null,
+        era2: eras.length > 1 ? PK(eras) : null,
+        auntFirst: w.auntFirst,
+        months, traits, anecdotes, motto, rooms, psAuthor
+      };
+    }
+
+    /* ================================================================
+       5. clue candidates — the full grammar:
+          pins, differences, inequalities, negations & neither-nor,
+          disjunctions, XOR, pairwise orderings & triptych chains,
+          ordinals, counting, sums, implications, matching-year
+          pairs, and the gated Enumerator's Error. Every candidate is
+          verified against the true solution and tagged with the
+          deduction technique it exercises.
+    ================================================================ */
+    function buildCandidates(w) {
+      const P = w.P, S = w.S, A = [], N = w.N;
+      const add = (tier, kind, frames, short, cons, fns, frag, tech) => { const o = { tier, kind, frames, short, cons, fns: fns || [], frag, tech: tech || 'pin' }; A.push(o); return o; };
+      const M = k => w.couples.find(c => c[ 0 ] === k || c[ 1 ] === k)[ 2 ];
+      const h1 = P.h1, w1 = P.w1, h2 = P.h2, w2 = P.w2, c1 = P.c1, c2 = P.c2, c3 = P.c3, c4 = P.c4, c5 = P.c5, e1 = P.e1, you = P.you;
+      const m1 = M('h1'), m2 = M('h2'), m3 = M('c1'), m4 = M('c4');
+      const men4 = [ h1, h2, c1, c4 ], wom6 = [ w1, w2, c2, c3, c5, e1 ];
+      const NN = k => N.nicks[ k ] || P[ k ].first;
+      const emboss = t => `<div class="form-seal"><svg viewBox="0 0 100 100"><g fill="none" stroke="#5c5240" opacity=".5"><circle cx="50" cy="50" r="45" stroke-width="1.6"/><circle cx="50" cy="50" r="36" stroke-width="1" stroke-dasharray="2 3"/></g><text x="50" y="45" text-anchor="middle" font-size="10" fill="#5c5240" opacity=".5" font-family="Spectral,serif" letter-spacing="1.5">${t.toUpperCase()}</text><text x="50" y="61" text-anchor="middle" font-size="10" fill="#5c5240" opacity=".5" font-family="Spectral,serif" letter-spacing="1.5">REGISTRAR</text></svg></div>`;
+      const regLine = (yr, g, b) => `<div class="book-line"><span>${yr} — groom</span><i>${g}</i></div><div class="book-line"><span>${yr} — bride</span><i>${b}</i></div>`;
+      const gapWords = g => g === 0 ? 'in the same year' : g + ' years apart';
+      const nameOf = fk => {
+        if (fk === 'w1') return `the wife of the ${h1.occ}`;
+        if (fk === 'w2') return `the wife of the ${h2.occ}`;
+        const p = P[ fk ]; return p.occ ? `the ${p.occ}` : `the ${CAPTIONS[ fk ]}`;
+      };
+
+      /* tier 0 — on-ramp */
+      add(0, 'memory', [ 'c4', 'e1' ],
+        `Your father is ${c4.first} ${S}, a ${c4.occ}. Your mother is ${e1.first} ${e1.sur}, born ${e1.b}.`,
+        [ [ FI.c4, 'first', c4.first ], [ FI.c4, 'occ', c4.occ ], [ FI.e1, 'first', e1.first ], [ FI.e1, 'sur', e1.sur ], [ FI.e1, 'b', e1.b ] ], null,
+        `<div class="d-form" style="position:relative"><h4>Certified Copy</h4><h5>of an Entry of Birth</h5>
+      <div class="form-line"><b>Name</b><span>${you.first} ${you.sur}</span></div>
+      <div class="form-line"><b>Born</b><span>${N.months.you} ${you.b}, at ${w.towns[ 0 ]} Cottage Hospital</span></div>
+      <div class="form-line"><b>Father</b><span>${c4.first} ${S}, ${c4.occ}</span></div>
+      <div class="form-line"><b>Mother</b><span>${e1.first} ${e1.sur}, aged ${m4 - e1.b}</span></div>
+      <div class="form-line"><b>Registered</b><span>by ${c4.first} ${S}, father</span></div>
+      ${emboss(w.towns[ 0 ])}
+      <p class="hand-note">Your own parents — that much needs no archive.</p></div>`);
+
+      /* tier 1 — the two 1911 censuses; the first household is the
+         named house, and may carry the misprint (composer-gated).
+         When the misprint is shown, the engine deliberately refuses
+         to pin that birth year from the census — the marriage
+         register remains the fair correction path. */
+      const households = [
+        { p: h1, sp: w1, frames: [ 'h1', 'w1', 'c1', 'c2' ], kids: [ [ 'c1', c1, 'Son', 'a son' ], [ 'c2', c2, 'Daughter', 'a daughter' ] ] },
+        { p: h2, sp: w2, frames: [ 'h2', 'w2', 'c3' ], kids: [ [ 'c3', c3, 'Daughter', 'their only child, a daughter' ] ] }
+      ];
+      const errIdx = PK([ 0, 1 ]);
+      ERR_FRAME = null;
+      households.forEach((hh, i) => {
+        const tAge = 1911 - hh.p.b, ts = String(tAge);
+        let shown = null;
+        if (i === errIdx && COMPOSE.has('error') && ts.length === 2 && ts[ 0 ] !== ts[ 1 ])
+        {
+          const sw = +(ts[ 1 ] + ts[ 0 ]);
+          if (sw >= 15 && sw <= 99 && sw !== tAge) { shown = sw; ERR_FRAME = hh.frames[ 0 ]; }
+        }
+        const cons = [ [ FI[ hh.frames[ 0 ] ], 'occ', hh.p.occ ] ];
+        if (shown == null) cons.push([ FI[ hh.frames[ 0 ] ], 'b', hh.p.b ]);
+        cons.push([ FI[ hh.frames[ 1 ] ], 'b', hh.sp.b ]);
+        hh.kids.forEach(([ k, p ]) => cons.push([ FI[ k ], 'b', p.b ]));
+        const headShort = shown != null ? `the ${hh.p.occ} (head, age ${shown}*)` : `the ${hh.p.occ} (head), ${hh.p.b}`;
+        const short = `Census 1911 (${hh.p.street}, ${hh.p.place}): ` + [ headShort, `his wife, ${hh.sp.b}`,
+          ...hh.kids.map(([ k, p, rel, lbl ]) => `${lbl}, ${p.b}`) ].join(', ') + '.';
+        const frag = `<div class="cens-block"><p class="cens-head">SCHEDULE ${R(100, 899)} — ${hh.p.street.toUpperCase()}, ${hh.p.place.toUpperCase()} — ENUMERATED 2 APRIL 1911</p>
+    ${hh.p === h1 ? `<p style="margin:-4px 0 8px;font-size:10.5px;letter-spacing:.08em;color:#5c5040">— the house known as &ldquo;${N.house}&rdquo;</p>` : ''}
+    <table><tr><th>Relation</th><th>Occupation &amp; description</th><th>Age</th></tr>
+    <tr><td>Head</td><td>the ${hh.p.occ}</td><td>${shown != null ? `<span class="errmark">${shown} *</span>` : tAge}</td></tr>
+    <tr><td>Wife</td><td>—</td><td>${1911 - hh.sp.b}</td></tr>
+    ${hh.kids.map(([ k, p, rel ]) => `<tr><td>${rel}</td><td>—</td><td>${1911 - p.b}</td></tr>`).join('')}</table>
+    ${shown != null ? `<p class="hand-note">* in a later pencil hand: &ldquo;the enumerator has transposed this figure — consult the register for this man&rsquo;s true age.&rdquo;</p>` : ''}</div>`;
+        add(1, 'census', hh.frames, short, cons, null, frag, 'pin');
+      });
+
+      /* tier 1 — a water-blotted 1901 census */
+      const c01 = PK(households.filter(hh => hh.p.b <= 1901 && hh.sp.b <= 1901));
+      if (c01)
+      {
+        const rows = [ [ `Head — the ${c01.p.occ}`, 1901 - c01.p.b ], [ `his wife`, 1901 - c01.sp.b ] ];
+        const cons = [ [ FI[ c01.frames[ 0 ] ], 'occ', c01.p.occ ], [ FI[ c01.frames[ 0 ] ], 'b', c01.p.b ], [ FI[ c01.frames[ 1 ] ], 'b', c01.sp.b ] ];
+        const shorts = [ `the ${c01.p.occ} (head), ${c01.p.b}`, `his wife, ${c01.sp.b}` ];
+        c01.kids.forEach(([ k, p, rel ]) => {
+          if (p.b <= 1901) { rows.push([ rel, 1901 - p.b ]); cons.push([ FI[ k ], 'b', p.b ]); shorts.push(`${rel.toLowerCase()}, ${p.b}`); }
+        });
+        add(1, 'census01', c01.frames,
+          `Census 1901 (${c01.p.street}): ` + shorts.join(', ') + '.', cons, null,
+          `<div class="cens-block"><p class="cens-head">SCHEDULE ${R(100, 899)} — ${c01.p.street.toUpperCase()} — ENUMERATED 31 MARCH 1901</p>
+      <table><tr><th>Relation <i style="text-transform:none">(water-blotted)</i></th><th>Age</th></tr>
+      ${rows.map(r => `<tr><td><span style="filter:blur(.6px);opacity:.6">${r[ 0 ]}</span></td><td>${r[ 1 ]}</td></tr>`).join('')}</table></div>`, 'pin');
+      }
+
+      /* tier 1 — marriage registers */
+      add(1, 'register', [ 'h1', 'w1' ],
+        `Married ${m1}: the ${h1.occ}, aged ${m1 - h1.b}, to ${w1.first} ${w1.sur}, aged ${m1 - w1.b}.`,
+        [ [ FI.h1, 'occ', h1.occ ], [ FI.h1, 'b', h1.b ], [ FI.w1, 'first', w1.first ], [ FI.w1, 'sur', w1.sur ], [ FI.w1, 'b', w1.b ] ], null,
+        regLine(m1, `the ${h1.occ}, aged ${m1 - h1.b}`, `${w1.first} ${w1.sur}, aged ${m1 - w1.b}`));
+      add(1, 'register', [ 'h2', 'w2' ],
+        `Married ${m2}: the ${h2.occ}, aged ${m2 - h2.b}, to ${w2.first} ${w2.sur}, aged ${m2 - w2.b}.`,
+        [ [ FI.h2, 'occ', h2.occ ], [ FI.h2, 'b', h2.b ], [ FI.w2, 'first', w2.first ], [ FI.w2, 'sur', w2.sur ], [ FI.w2, 'b', w2.b ] ], null,
+        regLine(m2, `the ${h2.occ}, aged ${m2 - h2.b}`, `${w2.first} ${w2.sur}, aged ${m2 - w2.b}`));
+      add(1, 'register', [ 'c1', 'c3', 'h1', 'h2' ],
+        `Married ${m3}: a ${c1.occ}, aged ${m3 - c1.b}, son of the ${h1.occ}, to the ${h2.occ}'s daughter, aged ${m3 - c3.b}.`,
+        [ [ FI.c1, 'occ', c1.occ ], [ FI.c1, 'b', c1.b ], [ FI.c3, 'b', c3.b ], [ FI.h1, 'occ', h1.occ ], [ FI.h2, 'occ', h2.occ ] ], null,
+        regLine(m3, `a ${c1.occ}, aged ${m3 - c1.b}, son of the ${h1.occ}`, `aged ${m3 - c3.b}, daughter of the ${h2.occ}`));
+      add(1, 'register', [ 'c4', 'e1' ],
+        `Married ${m4}: your father, aged ${m4 - c4.b}, to a ${e1.occ} of ${e1.place}, aged ${m4 - e1.b}.`,
+        [ [ FI.c4, 'b', c4.b ], [ FI.e1, 'occ', e1.occ ], [ FI.e1, 'b', e1.b ] ], null,
+        regLine(m4, `your father, aged ${m4 - c4.b}`, `a ${e1.occ} of ${e1.place}, aged ${m4 - e1.b}`));
+
+      /* tier 2 — the great-aunt's letter */
+      add(2, 'letter', [ 'c2' ],
+        `Their summers were spent at the cottage of their aunt ${c2.first}, the ${c2.occ}.`,
+        [ [ FI.c2, 'first', c2.first ], [ FI.c2, 'occ', c2.occ ] ], null,
+        `<p>The children's summers, all of them, were spent at the cottage of their aunt ${c2.first} — the ${c2.occ}, as the whole village knew.</p>`);
+      add(2, 'letter', [ 'w1', 'c4', 'c5' ],
+        `${w1.first} ${w1.sur} died in ${w1.d}, having lived to see her grandchildren ${c4.first} and ${c5.first}.`,
+        [ [ FI.w1, 'first', w1.first ], [ FI.w1, 'sur', w1.sur ], [ FI.w1, 'd', w1.d ], [ FI.c4, 'first', c4.first ], [ FI.c5, 'first', c5.first ] ], null,
+        `<p>${w1.first} ${w1.sur} lasted until ${w1.d} — long enough to see her grandchildren ${c4.first} and ${c5.first} grown.</p>`);
+      add(2, 'letter', [ 'w2', 'c4', 'c5' ],
+        `${w2.first} ${w2.sur} kept the christening gown; her great-grandchildren ${c4.first} and ${c5.first} were carried in it.`,
+        [ [ FI.w2, 'first', w2.first ], [ FI.w2, 'sur', w2.sur ], [ FI.c4, 'first', c4.first ], [ FI.c5, 'first', c5.first ] ], null,
+        `<p>${w2.first} ${w2.sur} kept the family christening gown. Her great-grandchildren ${c4.first} and ${c5.first} were both carried in it, four generations on.</p>`);
+      if (m1 + 50 <= Math.min(h1.d, w1.d))
+        add(2, 'letter', [ 'h1', 'w1' ],
+          `In ${m1 + 50} the ${h1.occ} and his wife celebrated fifty years of marriage.`,
+          [ [ FI.h1, 'occ', h1.occ ], [ FI.h1, 'mar', m1 ], [ FI.w1, 'mar', m1 ] ], null,
+          `<p>In ${m1 + 50} the whole street turned out for the ${h1.occ} and his wife — fifty years to the very season.</p>`);
+      const gA = Math.abs(c2.b - c1.b);
+      add(2, 'letter', [ 'c1', 'c2' ],
+        `The grandfather and the great-aunt were born ${gapWords(gA)}.`, [],
+        [ a => Math.abs(P[ a[ FI.c1 ] ].b - P[ a[ FI.c2 ] ].b) === gA ],
+        `<p>The grandfather and the great-aunt were born ${gapWords(gA)}, and spoke of it as proof of something.</p>`);
+      const gB = c5.b - c4.b;
+      add(2, 'letter', [ 'c4', 'c5' ],
+        `Your father and his sister were born ${gB} year${gB === 1 ? '' : 's'} apart.`, [],
+        [ a => P[ a[ FI.c5 ] ].b - P[ a[ FI.c4 ] ].b === gB ],
+        `<p>Your father and his sister were born ${gB} year${gB === 1 ? '' : 's'} apart, and shared every birthday cake between them.</p>`);
+      const g3 = Math.abs(c1.b - c3.b);
+      add(2, 'letter', [ 'c1', 'c3' ],
+        `The grandfather and grandmother were born ${gapWords(g3)}.`, [],
+        [ a => Math.abs(P[ a[ FI.c1 ] ].b - P[ a[ FI.c3 ] ].b) === g3 ],
+        `<p>The grandfather and grandmother were born ${gapWords(g3)}, ${g3 === 0 ? 'and counted it fate' : 'and counted it amusing'}.</p>`);
+      add(2, 'letter', [ 'c1', 'c4' ],
+        `The ${c1.occ}'s son followed the same trade — the ${c4.occ} of the next generation.`,
+        [ [ FI.c1, 'occ', c1.occ ], [ FI.c4, 'occ', c4.occ ] ], null,
+        `<p>The ${c1.occ}'s son followed the same trade, to nobody's surprise and everybody's comfort.</p>`);
+      const wrongF = PK([ c3.occ, e1.occ ].filter(o => o !== c2.occ));
+      add(2, 'letter', [ 'c2' ],
+        `Whatever else the aunt was, she was never the ${wrongF}.`, [],
+        [ a => P[ a[ FI.c2 ] ].occ !== wrongF ],
+        `<p>Their aunt was a great many things in her time — but never, whatever the neighbours said, the ${wrongF}.</p>`, 'negation');
+      const wrongM = PK(OCC_M.filter(o => o !== h1.occ));
+      add(2, 'letter', [ 'h1' ],
+        `No ${wrongM} ever kept the house on ${h1.street}.`, [],
+        [ a => P[ a[ FI.h1 ] ].occ !== wrongM ],
+        `<p>Whatever else is said of the house on ${h1.street}, no ${wrongM} ever kept it.</p>`, 'negation');
+      add(2, 'letter', [ 'c2' ],
+        `The aunt was neither the ${c3.occ} nor the ${e1.occ} — whatever the neighbours claimed.`,
+        [],
+        [ a => { const o = P[ a[ FI.c2 ] ].occ; return o !== c3.occ && o !== e1.occ; } ],
+        `<p>Their aunt was neither the ${c3.occ} nor the ${e1.occ}, whatever the neighbours claimed — and the neighbours claimed a good deal.</p>`, 'negation');
+      const evH2 = w.events.find(e => e.year > h2.b);
+      if (evH2)
+        add(2, 'letter', [ 'h2' ],
+          `The ${h2.occ} was born before ${evH2.name}.`, [],
+          [ a => P[ a[ FI.h2 ] ].b < evH2.year ],
+          `<p>The ${h2.occ} was born before ${evH2.name}, and would not let the family forget it.</p>`, 'negation');
+      /* if-then implication */
+      {
+        const menPairs = shuf([ [ 'h1', h1 ], [ 'h2', h2 ], [ 'c1', c1 ], [ 'c4', c4 ] ]).slice(0, 2);
+        const [ fa, pa ] = menPairs[ 0 ], [ fb, pb ] = menPairs[ 1 ];
+        for (const Y of shuf([ 1890, 1895, 1900, 1905 ]))
+        {
+          if (pa.b < Y)
+          {
+            add(2, 'letter', [ fa, fb ],
+              `If the ${pa.occ} was born before ${Y}, then so was the ${pb.occ}.`, [],
+              [ a => !(P[ a[ FI[ fa ] ] ].b < Y) || P[ a[ FI[ fb ] ] ].b < Y ],
+              `<p>If the ${pa.occ} had been born before ${Y}, then so had the ${pb.occ} — of that, at least, the aunts were certain, and the aunts were seldom certain of anything.</p>`, 'implies');
+            break;
+          }
+        }
+      }
+
+      /* tier 2 — parish registers */
+      add(2, 'parish', [ 'h1' ],
+        `${h1.first} ${S} was buried in ${h1.d}, aged ${h1.d - h1.b}.`,
+        [ [ FI.h1, 'first', h1.first ], [ FI.h1, 'b', h1.b ] ], null,
+        `<div class="book-line"><span>${h1.first} ${S}</span><i>the ${h1.occ} — buried ${h1.d}, aged ${h1.d - h1.b}</i></div>`);
+      add(2, 'parish', [ 'h2' ],
+        `${h2.first} ${S}, the ${h2.occ}, was buried in ${h2.d}, aged ${h2.d - h2.b}.`,
+        [ [ FI.h2, 'first', h2.first ], [ FI.h2, 'b', h2.b ] ], null,
+        `<div class="book-line"><span>${h2.first} ${S}</span><i>the ${h2.occ} — buried ${h2.d}, aged ${h2.d - h2.b}</i></div>`);
+      add(2, 'parish', [ 'w2' ],
+        `${w2.first} ${w2.sur} died in ${w2.d}, aged ${w2.d - w2.b}.`,
+        [ [ FI.w2, 'first', w2.first ], [ FI.w2, 'sur', w2.sur ], [ FI.w2, 'b', w2.b ] ], null,
+        `<div class="book-line"><span>${w2.first} ${w2.sur}</span><i>died ${w2.d}, aged ${w2.d - w2.b}</i></div>`);
+      if (h2.d < 1900)
+        add(2, 'parish', [ 'h2' ],
+          `The ${h2.occ} was laid to rest before the new century.`, [],
+          [ a => P[ a[ FI.h2 ] ].d < 1900 ],
+          `<div class="book-line"><span>the old plot</span><i>laid to rest before the new century</i></div>`, 'negation');
+      if (w1.d >= 1900)
+        add(2, 'parish', [ 'w1' ],
+          `The wife of the ${h1.occ} lived into the new century.`, [],
+          [ a => P[ a[ FI.w1 ] ].d >= 1900 ],
+          `<div class="book-line"><span>the widow's pew</span><i>she lived into the new century</i></div>`, 'negation');
+      const evC5 = w.events.find(e => e.year < c5.b);
+      if (evC5)
+        add(2, 'parish', [ 'c5' ],
+          `The youngest was born after ${evC5.name}.`, [],
+          [ a => P[ a[ FI.c5 ] ].b > evC5.year ],
+          `<div class="book-line"><span>baptism roll</span><i>the youngest — born after ${evC5.name}</i></div>`, 'negation');
+      w.events.filter(e => e.person).forEach(e => {
+        const p = P[ e.person ];
+        add(2, 'parish', [ e.person ],
+          `${p.first} was born the year of ${e.name}.`,
+          [ [ FI[ e.person ], 'first', p.first ], [ FI[ e.person ], 'b', p.b ] ], null,
+          `<div class="book-line"><span>${p.first}</span><i>baptised the year of ${e.name}</i></div>`);
+      });
+      w.events.filter(e => e.couple).forEach(e => {
+        const sp = w.couples.find(c => c[ 0 ] === e.couple)[ 1 ];
+        add(2, 'parish', [ e.couple, sp ],
+          `A wedding in the year of ${e.name}.`,
+          [ [ FI[ e.couple ], 'mar', e.year ], [ FI[ sp ], 'mar', e.year ] ], null,
+          `<div class="book-line"><span>${e.year}</span><i>the bells rung for ${e.name} — and a wedding</i></div>`);
+      });
+
+      /* tier 2 — the photograph album (orderings, chains, either/or, xor) */
+      if (h1.b !== h2.b)
+      {
+        const o1 = h1.b < h2.b, Ao = o1 ? h1 : h2, Bo = o1 ? h2 : h1;
+        add(2, 'album', [ 'h1', 'h2' ],
+          `Photograph: of the two brothers-in-law, the ${Ao.occ} was the elder.`, [],
+          [ a => o1 ? P[ a[ FI.h1 ] ].b < P[ a[ FI.h2 ] ].b : P[ a[ FI.h2 ] ].b < P[ a[ FI.h1 ] ].b ],
+          `<p>The album's first page shows the two households together — the ${Ao.occ} and the ${Bo.occ}, brothers-in-law by way of their eldest children. The ${Ao.occ} stands a half-step taller: he was the elder of the two.</p>`, 'order');
+      }
+      if (w1.b !== w2.b)
+      {
+        const o1 = w1.b < w2.b;
+        add(2, 'album', [ 'w1', 'w2' ],
+          `Photograph: the wife of the ${h1.occ} was born before the wife of the ${h2.occ}.`, [],
+          [ a => o1 ? P[ a[ FI.w1 ] ].b < P[ a[ FI.w2 ] ].b : P[ a[ FI.w2 ] ].b < P[ a[ FI.w1 ] ].b ],
+          `<p>The same page shows the two wives on the garden wall. The wife of the ${h1.occ}, the caption notes, was born first.</p>`, 'order');
+      }
+      if (c4.b - c1.b >= 15)
+      {
+        add(2, 'album', [ 'c1', 'c4' ],
+          `Photograph: the ${c1.occ} was born a generation before the ${c4.occ}.`, [],
+          [ a => P[ a[ FI.c1 ] ].b < P[ a[ FI.c4 ] ].b ],
+          `<p>A faded print: the ${c1.occ} as a young man and — by the wear on it — a generation later, the ${c4.occ} standing in the same spot.</p>`, 'order');
+      }
+      if (new Set(men4.map(p => p.b)).size === 4)
+      {
+        const trio = shuf(men4.map(p => p.key)).slice(0, 3).map(k => P[ k ]);
+        const asc = [ ...trio ].sort((a, b) => a.b - b.b);
+        add(2, 'album', trio.map(p => p.key),
+          `A triptych: born in this order — the ${asc[ 0 ].occ}, then the ${asc[ 1 ].occ}, then the ${asc[ 2 ].occ}.`, [],
+          [ a => { const ys = asc.map(p => P[ a[ FI[ p.key ] ] ].b); return ys[ 0 ] < ys[ 1 ] && ys[ 1 ] < ys[ 2 ]; } ],
+          `<p>Three portraits hang in sequence in the album's middle pages, the dates of birth pencilled beneath in the order they came: the ${asc[ 0 ].occ}, then the ${asc[ 1 ].occ}, then the ${asc[ 2 ].occ}.</p>`, 'order');
+      }
+      const evYrs = w.events.map(e => ({ y: e.year, n: e.name }));
+      const pairsM = [ [ 'h1', 'h2' ], [ 'h1', 'c1' ], [ 'h1', 'c4' ], [ 'h2', 'c1' ], [ 'c1', 'c4' ] ];
+      const pairsF = [ [ 'w1', 'w2' ], [ 'w1', 'c2' ], [ 'w1', 'c3' ], [ 'w1', 'e1' ], [ 'w2', 'c2' ], [ 'c2', 'c3' ], [ 'c3', 'e1' ] ];
+      shuf(pairsM.concat(pairsF)).slice(0, 2).forEach(pair => {
+        const [ f1, f2 ] = pair, p1 = P[ f1 ], p2 = P[ f2 ];
+        if (p1.b === p2.b) return;
+        const ev = evYrs.find(e => (e.y === p1.b) !== (e.y === p2.b));
+        if (!ev) return;
+        const trueFk = p1.b === ev.y ? f1 : f2;
+        const cE = add(2, 'album', [ f1, f2 ],
+          `A photograph dated the year of ${ev.n}: either ${nameOf(f1)} or ${nameOf(f2)} was born that year.`, [],
+          [ a => P[ a[ FI[ f1 ] ] ].b === ev.y || P[ a[ FI[ f2 ] ] ].b === ev.y ],
+          `<p>A photograph inscribed &ldquo;taken the year of ${ev.n}.&rdquo; On the back, in pencil: &ldquo;the year one of them was born — either ${nameOf(f1)} or ${nameOf(f2)}. Nobody wrote down which.&rdquo;</p>`, 'either');
+        cE._torn = { ev: ev.n, who: NN(trueFk) }; /* the torn caption, resolved in the epilogue */
+      });
+      for (const Y of shuf([ 1935, 1940, 1945, 1950 ]))
+      {
+        const a1 = w1.d >= Y, a2 = w2.d >= Y;
+        if (a1 !== a2)
+        {
+          add(2, 'album', [ 'w1', 'w2' ],
+            `Only one of the two grandmothers lived to see ${Y}.`, [],
+            [ x => (P[ x[ FI.w1 ] ].d >= Y) !== (P[ x[ FI.w2 ] ].d >= Y) ],
+            `<p>Two mourning cards lie pinned to the album's last page — different years, different hands. Only one of the two grandmothers lived to see ${Y}. The cards remember which; the caption does not.</p>`, 'xor');
+          break;
+        }
+      }
+
+      /* tier 2 — general abstract: counting, sums, ordinals, pairs */
+      for (const Y of shuf([ 1880, 1885, 1890, 1895, 1900 ]))
+      {
+        const cnt = men4.filter(p => p.b < Y).length;
+        if (cnt > 0 && cnt < 4 && !men4.some(p => p.b === Y))
+        {
+          add(2, 'abstract', [ 'h1', 'h2', 'c1', 'c4' ],
+            `Of the four men, exactly ${cnt} ${cnt === 1 ? 'was' : 'were'} born before ${Y}.`, [],
+            [ a => [ P[ a[ FI.h1 ] ], P[ a[ FI.h2 ] ], P[ a[ FI.c1 ] ], P[ a[ FI.c4 ] ] ].filter(q => q.b < Y).length === cnt ],
+            `<p class="absline">— of the four men of the family, exactly ${cnt} ${cnt === 1 ? 'was' : 'were'} born before ${Y}.</p>`, 'count');
+          break;
+        }
+      }
+      for (const Y of shuf([ 1890, 1895, 1900, 1905, 1911 ]))
+      {
+        const cnt = wom6.filter(p => p.b < Y).length;
+        if (cnt > 1 && cnt < 6 && !wom6.some(p => p.b === Y))
+        {
+          add(2, 'abstract', [ 'w1', 'w2', 'c2', 'c3', 'c5', 'e1' ],
+            `Of the six women, exactly ${cnt} were born before ${Y}.`, [],
+            [ a => [ P[ a[ FI.w1 ] ], P[ a[ FI.w2 ] ], P[ a[ FI.c2 ] ], P[ a[ FI.c3 ] ], P[ a[ FI.c5 ] ], P[ a[ FI.e1 ] ] ].filter(q => q.b < Y).length === cnt ],
+            `<p class="absline">— of the six women of the family, exactly ${cnt} were born before ${Y}.</p>`, 'count');
+          break;
+        }
+      }
+      const sumGG = (1911 - h1.b) + (1911 - h2.b);
+      add(2, 'abstract', [ 'h1', 'h2' ],
+        `The two great-grandfathers' ages together summed to ${sumGG} at the census.`, [],
+        [ a => (1911 - P[ a[ FI.h1 ] ].b) + (1911 - P[ a[ FI.h2 ] ].b) === sumGG ],
+        `<p class="absline">— the ages of the two household heads of the eldest generation, taken together at the enumeration: ${sumGG} years.</p>`, 'sum');
+      if (new Set(men4.map(p => p.b)).size === 4)
+      {
+        const om = [ ...men4 ].sort((a, b) => a.b - b.b), r = R(2, 3), tp = om[ r - 1 ];
+        add(2, 'abstract', [ 'h1', 'h2', 'c1', 'c4' ],
+          `Age roll: the ${ORD(r)}-eldest of the four men was the ${tp.occ}.`, [],
+          [ a => [ P[ a[ FI.h1 ] ], P[ a[ FI.h2 ] ], P[ a[ FI.c1 ] ], P[ a[ FI.c4 ] ] ].sort((x, y) => x.b - y.b)[ r - 1 ].occ === tp.occ ],
+          `<p class="absline">— the clerk's age roll of the four men, eldest first: the ${ORD(r)} of them kept the ${tp.occ}.</p>`, 'ordinal');
+      }
+      if (new Set(wom6.map(p => p.b)).size === 6)
+      {
+        const ow = [ ...wom6 ].sort((a, b) => a.b - b.b), r = R(2, 5), tp = ow[ r - 1 ];
+        add(2, 'abstract', [ 'w1', 'w2', 'c2', 'c3', 'c5', 'e1' ],
+          `Age roll: the ${ORD(r)}-eldest of the six women was born ${tp.b}.`, [],
+          [ a => [ P[ a[ FI.w1 ] ], P[ a[ FI.w2 ] ], P[ a[ FI.c2 ] ], P[ a[ FI.c3 ] ], P[ a[ FI.c5 ] ], P[ a[ FI.e1 ] ] ].sort((x, y) => x.b - y.b)[ r - 1 ].b === tp.b ],
+          `<p class="absline">— the clerk's age roll of the six women, eldest first: the ${ORD(r)} of them was born in ${tp.b}.</p>`, 'ordinal');
+      }
+      const tryPair = (grp, label) => {
+        const yc = {}; grp.forEach(k => { (yc[ P[ k ].b ] = yc[ P[ k ].b ] || []).push(k); });
+        const prs = Object.values(yc).filter(g => g.length === 2);
+        if (prs.length !== 1) return;
+        const withOcc = prs[ 0 ].filter(k => P[ k ].occ);
+        if (!withOcc.length) return;
+        const kA = withOcc[ 0 ];
+        add(2, 'abstract', grp.slice(),
+          `Two of the ${label} were born in the same year — the ${P[ kA ].occ} was one of them.`, [],
+          [ a => {
+            const b0 = P[ a[ FI[ kA ] ] ].b;
+            return grp.filter(k2 => k2 !== kA && P[ a[ FI[ k2 ] ] ].b === b0).length === 1;
+          } ],
+          `<p class="absline">— one coincidence of birth-years among the ${label}: two share a year, and the ${P[ kA ].occ} is one of the two.</p>`, 'pair');
+      };
+      tryPair([ 'w1', 'w2', 'c2', 'c3', 'c5', 'e1' ], 'six women');
+      tryPair([ 'h1', 'w1', 'h2', 'w2' ], 'four elders of the eldest generation');
+
+      /* tier 3 — trade directory */
+      [ 'h1', 'h2', 'c1', 'c4' ].forEach(k => {
+        const p = P[ k ];
+        add(3, 'directory', [ k ],
+          `Directory: ${p.first} ${S} — ${p.occ}.`,
+          [ [ FI[ k ], 'first', p.first ], [ FI[ k ], 'occ', p.occ ] ], null,
+          `<tr><td>${p.first} ${S}</td><td>${p.occ}</td></tr>`);
+      });
+
+      /* tier 3 — keepsakes (nicknames & birth months appear here) */
+      add(3, 'keepsake', [ 'w1' ], `A recipe card signed ${NN('w1')}.`,
+        [ [ FI.w1, 'first', w1.first ], [ FI.w1, 'sur', w1.sur ] ], null,
+        `<p>A recipe for seed cake, signed ${NN('w1')}, folded into the flour tin.</p>`);
+      add(3, 'keepsake', [ 'w2' ], `A jar label written by ${w2.first} ${w2.sur}.`,
+        [ [ FI.w2, 'first', w2.first ], [ FI.w2, 'sur', w2.sur ] ], null,
+        `<p>A jam-jar label in a steady hand: &ldquo;spiced apples, put up by ${w2.first} ${w2.sur}.&rdquo;</p>`);
+      add(3, 'keepsake', [ 'e1' ], `A dance card inscribed ${e1.first} ${e1.sur}.`,
+        [ [ FI.e1, 'first', e1.first ], [ FI.e1, 'sur', e1.sur ] ], null,
+        `<p>A dance card from the ${w.towns[ 2 ]} assembly rooms, inscribed ${e1.first} ${e1.sur} — every dance taken.</p>`);
+      add(3, 'keepsake', [ 'c2' ], `A school prize inscribed ${c2.first} ${S}, ${c2.b + 14}.`,
+        [ [ FI.c2, 'first', c2.first ], [ FI.c2, 'b', c2.b ] ], null,
+        `<p>A school prize for penmanship, inscribed ${c2.first} ${S}, ${c2.b + 14}.</p>`);
+      add(3, 'keepsake', [ 'c3' ], `The parcel counter ledger, signed ${NN('c3')}.`,
+        [ [ FI.c3, 'first', c3.first ], [ FI.c3, 'occ', c3.occ ] ], null,
+        `<p>A parcel ledger from the counter, signed ${NN('c3')} — the ${c3.occ}'s own book.</p>`);
+      add(3, 'keepsake', [ 'c5' ], `A christening record: ${c5.first} ${S}, born ${N.months.c5} ${c5.b}.`,
+        [ [ FI.c5, 'first', c5.first ], [ FI.c5, 'b', c5.b ] ], null,
+        `<p>A folded christening record: ${c5.first} ${S}, born in ${N.months.c5}, ${c5.b}.</p>`);
+      return A;
+    }
+
+    /* ================================================================
+       6. solving engine — bitsets (17,280 assignments, 540 words),
+          forcing propagation with minimal witnesses, B&B minimizer,
+          technique labels, difficulty rating, par time.
+    ================================================================ */
+    const MALE_FR = [ FI.h1, FI.h2, FI.c1, FI.c4 ];
+    const FEM_FR = [ FI.w1, FI.w2, FI.c2, FI.c3, FI.c5, FI.e1 ];
+    const N_ASSIGN = 24 * 720, WORDS = N_ASSIGN / 32;
+    let PEOPLE = [], ASSIGN = null, COL = null;
+    const ALL_MASK = (() => { const m = new Uint32Array(WORDS); for (let i = 0; i < WORDS; i++)m[ i ] = 0xFFFFFFFF; return m; })();
+    const TRUTH_A = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ];
+    const TECH_ALWAYS = new Set([ 'pin', 'negation' ]);
+
+    const TECHS = {
+      pin: 'direct evidence', negation: 'exclusion', order: 'ranking', either: 'either/or', xor: 'exclusive or',
+      count: 'counting sweep', sum: 'arithmetic', ordinal: 'ordinal position', implies: 'implication', pair: 'matching years'
+    };
+    const TECH_PRIORITY = [ 'count', 'pair', 'sum', 'xor', 'either', 'implies', 'ordinal', 'order', 'negation', 'pin' ];
+    const METHOD = {
+      count: 'try a counting sweep — the General Abstract counts heads by year',
+      pair: 'scan the group for two born in the same year — the papers name one of the pair',
+      sum: 'try arithmetic — add the two ages the Abstract gives',
+      xor: 'test one side — if one of the pair died before the year, the other must have lived past it',
+      either: 'test both halves of the either/or — one side will be ruled out by the papers',
+      implies: 'check the condition — if it fails, the clue says nothing; if it holds, follow it through',
+      ordinal: 'line the group up eldest first and count down the ranks',
+      order: 'put the pair in order using the dated papers',
+      negation: 'work by elimination — strike what the papers forbid',
+      pin: 'cross-reference the direct records — censuses, registers, keepsakes'
+    };
+    function stepTech(s) {
+      const ts = (s.wits || []).map(c => c.tech || 'pin');
+      for (const t of TECH_PRIORITY) if (ts.includes(t)) return t;
+      return ts[ 0 ] || 'pin';
+    }
+
+    function checkClue(c, a) {
+      for (const [ f, at, v ] of c.cons) { if (PEOPLE[ a[ f ] ][ at ] !== v) return false; }
+      for (const fn of c.fns) { if (!fn(a)) return false; }
+      return true;
+    }
+    function permsOf(arr) {
+      if (arr.length <= 1) return [ arr.slice() ];
+      const out = [];
+      arr.forEach((v, i) => { permsOf(arr.slice(0, i).concat(arr.slice(i + 1))).forEach(p => out.push([ v, ...p ])); });
+      return out;
+    }
+    function buildAssignments() {
+      ASSIGN = new Uint8Array(N_ASSIGN * 11);
+      const mp = permsOf(MALE_FR), fp = permsOf(FEM_FR);
+      let idx = 0;
+      for (let m = 0; m < 24; m++)for (let f = 0; f < 720; f++, idx++)
+      {
+        const o = idx * 11, pm = mp[ m ], pf = fp[ f ];
+        for (let i = 0; i < 4; i++) ASSIGN[ o + MALE_FR[ i ] ] = pm[ i ];
+        for (let i = 0; i < 6; i++) ASSIGN[ o + FEM_FR[ i ] ] = pf[ i ];
+        ASSIGN[ o + FI.you ] = FI.you;
+      }
+    }
+    function buildClueMask(c) {
+      const m = new Uint32Array(WORDS), tmp = new Array(11);
+      for (let i = 0; i < N_ASSIGN; i++)
+      {
+        const o = i * 11;
+        for (let k = 0; k < 11; k++) tmp[ k ] = ASSIGN[ o + k ];
+        if (checkClue(c, tmp)) m[ i >> 5 ] |= 1 << (i & 31);
+      }
+      return m;
+    }
+    function buildColMasks() {
+      COL = []; for (let f = 0; f < 11; f++) { const r = []; for (let p = 0; p < 11; p++) r.push(null); COL.push(r); }
+      for (let i = 0; i < N_ASSIGN; i++)
+      {
+        const o = i * 11, w = i >> 5, b = 1 << (i & 31);
+        for (let f = 0; f < 11; f++)
+        {
+          const p = ASSIGN[ o + f ];
+          let m = COL[ f ][ p ];
+          if (!m) { m = new Uint32Array(WORDS); COL[ f ][ p ] = m; }
+          m[ w ] |= b;
+        }
+      }
+    }
+    function popW(x) { let c = 0; while (x) { x &= x - 1; c++; } return c; }
+    function popcnt(m) { let c = 0; for (let i = 0; i < WORDS; i++)c += popW(m[ i ]); return c; }
+    function intersectMasks(masks) {
+      const m = new Uint32Array(ALL_MASK);
+      for (const x of masks) for (let i = 0; i < WORDS; i++) m[ i ] &= x[ i ];
+      return m;
+    }
+    function masksIntersect(a, b) { for (let i = 0; i < WORDS; i++) if (a[ i ] & b[ i ]) return true; return false; }
+
+    function computeDerivation(chosen) {
+      const alive = new Uint32Array(ALL_MASK);
+      for (const c of chosen) for (let i = 0; i < WORDS; i++) alive[ i ] &= c._mask[ i ];
+      const done = new Uint8Array(11); done[ FI.you ] = 1;
+      const steps = [];
+      for (let round = 0; round < 12; round++)
+      {
+        let target = -1, candP = -1;
+        for (let f = 0; f < 11; f++)
+        {
+          if (done[ f ]) continue;
+          let cnt = 0, p = -1;
+          for (let pp = 0; pp < 11 && cnt < 2; pp++)
+          {
+            const cm = COL[ f ][ pp ]; if (!cm) continue;
+            let any = false;
+            for (let i = 0; i < WORDS; i++) { if (alive[ i ] & cm[ i ]) { any = true; break; } }
+            if (any) { cnt++; p = pp; }
+          }
+          if (cnt === 1) { target = f; candP = p; break; }
+        }
+        if (target < 0) break;
+        steps.push({ fk: FK[ target ], wits: witnessFor(chosen, target, candP) });
+        const cm = COL[ target ][ candP ];
+        for (let i = 0; i < WORDS; i++) alive[ i ] &= cm[ i ];
+        done[ target ] = 1;
+      }
+      let n = 0; for (let i = 0; i < 11; i++) n += done[ i ];
+      return { solved: n === 11, steps };
+    }
+    function witnessFor(chosen, f, p) {
+      const bad = [];
+      for (let q = 0; q < 11; q++) { if (q === p || !COL[ f ][ q ]) continue; bad.push(COL[ f ][ q ]); }
+      if (!bad.length) return [];
+      const S = [], rem = bad.map(() => true);
+      let left = bad.length;
+      while (left > 0)
+      {
+        let best = null, bk = -1;
+        for (const c of chosen)
+        {
+          if (S.includes(c)) continue;
+          let k = 0;
+          for (let bi = 0; bi < bad.length; bi++)
+          {
+            if (!rem[ bi ]) continue;
+            for (let i = 0; i < WORDS; i++) k += popW(bad[ bi ][ i ] & c._mask[ i ]);
+          }
+          if (k > bk) { bk = k; best = c; }
+        }
+        if (!best || bk <= 0) break;
+        S.push(best);
+        for (let bi = 0; bi < bad.length; bi++)
+        {
+          if (!rem[ bi ]) continue;
+          if (!masksIntersect(bad[ bi ], best._mask)) { rem[ bi ] = false; left--; }
+        }
+      }
+      return S;
+    }
+    function greedyUnique(pool) {
+      const base = pool.filter(c => c.tier === 0);
+      const alive = new Uint32Array(ALL_MASK);
+      for (const c of base) for (let i = 0; i < WORDS; i++) alive[ i ] &= c._mask[ i ];
+      let aliveN = popcnt(alive);
+      const chosen = base.slice(), inSet = new Set(base);
+      const named = new Set(); base.forEach(c => c.frames.forEach(f => named.add(f)));
+      const kinds = new Set(base.map(c => c.kind));
+      const tmp = new Uint32Array(WORDS);
+      for (let guard = 0; aliveN > 1 && guard < 80; guard++)
+      {
+        let best = null, bs = -1e9, bestA = null, bestN = 0;
+        for (const c of pool)
+        {
+          if (inSet.has(c)) continue;
+          let rem = 0;
+          for (let i = 0; i < WORDS; i++) { const x = alive[ i ] & c._mask[ i ]; tmp[ i ] = x; rem += popW(x); }
+          if (rem >= aliveN) continue;
+          let score = (aliveN - rem) * 10 - c.tier * 2 + c.fns.length + rng() * 3;
+          if (c.frames.some(f => !named.has(f))) score += 5;
+          if (!kinds.has(c.kind)) score += 3;
+          if (score > bs) { bs = score; best = c; bestA = tmp.slice(); bestN = rem; }
+        }
+        if (!best) break;
+        chosen.push(best); inSet.add(best);
+        alive.set(bestA); aliveN = bestN;
+        best.frames.forEach(f => named.add(f)); kinds.add(best.kind);
+      }
+      return { chosen, unique: aliveN === 1 };
+    }
+    function coverageOK(list) {
+      const named = new Set(); list.forEach(c => c.frames.forEach(f => named.add(f)));
+      for (const f of FK) { if (f === 'you') continue; if (!named.has(f)) return false; }
+      return true;
+    }
+    function coveragePass(chosen, pool) {
+      const named = new Set(); chosen.forEach(c => c.frames.forEach(f => named.add(f)));
+      for (const f of FK)
+      {
+        if (f === 'you' || named.has(f)) continue;
+        const c = pool.filter(x => !chosen.includes(x) && x.frames.includes(f)).sort((a, b) => a.tier - b.tier)[ 0 ];
+        if (c) { chosen.push(c); c.frames.forEach(g => named.add(g)); }
+      }
+    }
+    function prunePass(chosen) {
+      let changed = true;
+      while (changed)
+      {
+        changed = false;
+        for (let i = chosen.length - 1; i >= 0; i--)
+        {
+          const c = chosen[ i ]; if (c.tier === 0) continue;
+          const test = chosen.filter((_, j) => j !== i);
+          if (popcnt(intersectMasks(test.map(x => x._mask))) !== 1) continue;
+          if (!coverageOK(test)) continue;
+          chosen.splice(i, 1); changed = true;
+        }
+      }
+    }
+    function minimizeBB(chosen, budget) {
+      budget = budget || 20000;
+      const base = chosen.filter(c => c.tier === 0);
+      const rest = chosen.filter(c => c.tier > 0).slice()
+        .sort((a, b) => (N_ASSIGN - popcnt(a._mask)) - (N_ASSIGN - popcnt(b._mask)));
+      const baseLen = base.length;
+      let best = chosen.slice(), bestLen = chosen.length, nodes = 0;
+      const alive0 = new Uint32Array(ALL_MASK);
+      for (const c of base) for (let i = 0; i < WORDS; i++) alive0[ i ] &= c._mask[ i ];
+      const cur = [];
+      function dfs(i, alive) {
+        if (nodes++ > budget) return;
+        const pc = popcnt(alive);
+        if (pc === 1) { if (baseLen + cur.length < bestLen) { bestLen = baseLen + cur.length; best = base.concat(cur.slice()); } return; }
+        if (i >= rest.length) return;
+        if (baseLen + cur.length + 1 >= bestLen) return;
+        dfs(i + 1, alive);
+        if (nodes > budget) return;
+        const a2 = new Uint32Array(alive);
+        const mk = rest[ i ]._mask;
+        for (let w = 0; w < WORDS; w++) a2[ w ] &= mk[ w ];
+        if (popcnt(a2) < pc) { cur.push(rest[ i ]); dfs(i + 1, a2); cur.pop(); }
+      }
+      dfs(0, alive0);
+      return best;
+    }
+    function buildPuzzle(diff) {
+      const pool = buildCandidates(W);
+      const ok = pool.filter(c => checkClue(c, TRUTH_A)
+        && (c.tier === 0 || TECH_ALWAYS.has(c.tech || 'pin') || COMPOSE.has(c.tech || 'pin')));
+      if (!ok.some(c => c.tier === 0)) return null;
+      buildAssignments();
+      ok.forEach(c => c._mask = buildClueMask(c));
+      buildColMasks();
+      let best = null;
+      for (let s = 0; s < 4; s++)
+      {
+        const g = greedyUnique(ok);
+        if (!g.unique) continue;
+        const dr = computeDerivation(g.chosen);
+        const q = g.chosen.length * 10
+          - new Set(g.chosen.flatMap(c => c.frames)).size * 3
+          - new Set(g.chosen.map(c => c.kind)).size * 2
+          - dr.steps.length * 2
+          - new Set(g.chosen.map(c => c.tech || 'pin')).size;
+        if (!best || q < best.q) best = { list: g.chosen.slice(), q };
+      }
+      if (!best) return null;
+      const chosen = best.list;
+      if (diff === 0)
+      {
+        coveragePass(chosen, ok);
+        const inSet = new Set(chosen); let added = 0;
+        ok.filter(c => !inSet.has(c)).sort((a, b) => a.tier - b.tier)
+          .forEach(c => { if (added < 4) { chosen.push(c); added++; } });
+      } else if (diff === 1)
+      {
+        coveragePass(chosen, ok); prunePass(chosen);
+      } else
+      {
+        const m = minimizeBB(chosen, 20000);
+        chosen.length = 0; m.forEach(c => chosen.push(c));
+      }
+      let rep = computeDerivation(chosen);
+      const inSet = new Set(chosen);
+      for (let g2 = 0; !rep.solved && g2 < 40; g2++)
+      {
+        const placed = new Set(rep.steps.map(s => s.fk));
+        const unplaced = FK.filter(f => f !== 'you' && !placed.has(f));
+        const cand = ok.filter(c => !inSet.has(c) && c.frames.some(f => unplaced.includes(f)));
+        let pick = null, pickSteps = -1;
+        for (const c of cand)
+        {
+          const rr = computeDerivation(chosen.concat(c));
+          if (rr.solved) { pick = c; break; }
+          if (rr.steps.length > pickSteps) { pickSteps = rr.steps.length; pick = c; }
+        }
+        if (!pick) break;
+        chosen.push(pick); inSet.add(pick);
+        rep = computeDerivation(chosen);
+      }
+      if (!rep.solved) return null;
+      if (popcnt(intersectMasks(chosen.map(c => c._mask))) !== 1) return null;
+      const seen = new Set(), clues = [];
+      chosen.forEach(c => { if (!seen.has(c)) { seen.add(c); clues.push(c); } });
+      const avgW = rep.steps.reduce((n, s) => n + Math.max(1, (s.wits || []).length), 0) / Math.max(1, rep.steps.length);
+      const avgT = clues.reduce((n, c) => n + c.tier, 0) / Math.max(1, clues.length);
+      const techN = new Set(clues.map(c => c.tech || 'pin')).size;
+      const rating = Math.max(1, Math.min(5, Math.round(rep.steps.length * 0.32 + (avgW - 1) * 1.1 + avgT * 0.55 + techN * 0.15)));
+      const par = Math.max(8, Math.min(90, Math.round(rep.steps.reduce((n, s) => n + 1.6 + Math.max(1, (s.wits || []).length) * 0.9, 0) + clues.length * 0.5)));
+      return { clues, deriv: rep.steps, rating, par };
+    }
+
+    /* ================================================================
+       7. document assembly — narrative threading
+    ================================================================ */
+    let DERIV = [], DOC_FOR_FRAME = {};
+    function buildDocs(w, chosen) {
+      const P = w.P, S = w.S, docs = [], N = w.N;
+      const byKind = k => chosen.filter(c => c.kind === k);
+      const clueLines = arr => arr.map(c => ({ short: c.short }));
+      const stamp = (arr, id) => arr.forEach((c, i) => { c._docId = id; c._i = i; });
+      const stepOf = {}; DERIV.forEach((s, i) => { if (!(s.fk in stepOf)) stepOf[ s.fk ] = i; });
+      const mapFrames = (objs, title) => objs.forEach(c => c.frames.forEach(f => { if (!(f in DOC_FOR_FRAME)) DOC_FOR_FRAME[ f ] = title; }));
+
+      docs.push({
+        id: 'index', icon: 'list', start: true, populates: true, clueLines: [],
+        title: 'Index of Names', sub: 'compiled by the family solicitor',
+        body: `<div class="d-index"><h4>Index of Names</h4><h5>the eleven names found in this trunk</h5>
+      ${FK.map(k => {
+          const p = P[ k ]; const nick = N.nicks[ k ];
+          const note = [ k === 'you' ? '— that would be you' : (p.sur !== S && p.mar ? 'married into the ' + S + ' family' : ''),
+          nick ? `\u201C${nick}\u201D to the family` : null ].filter(Boolean).join(' · ');
+          return `<div class="indexline"><span class="dthumb">${sil(p.sex)}</span><span>${p.first} ${p.sur}</span><i>${note}</i></div>`;
+        }).join('')}
+      <p class="book-note">Every frame on the tree is one of these eleven. The papers never name anyone else — but the family, being a family, had other names for some of them. The index keeps both.</p></div>`});
+      const mem = byKind('memory')[ 0 ];
+      if (mem) { stamp([ mem ], 'memory'); mapFrames([ mem ], 'Your Own Papers'); }
+      docs.push({
+        id: 'memory', icon: 'cert', start: true, clueLines: mem ? [ { short: mem.short } ] : [],
+        title: 'Your Own Papers', sub: 'a birth certificate, kept in the side pocket', body: mem ? mem.frag : ''
+      });
+      docs.push({
+        id: 'chronicle', icon: 'news', start: true,
+        clueLines: w.events.map(e => ({ short: `${e.year} — ${e.name}.` })),
+        title: `The ${w.towns[ 0 ]} Chronicle`, sub: 'milestones of the district · 1870–1970',
+        body: `<div class="d-news"><h4>The ${w.towns[ 0 ]} Chronicle</h4><p class="news-date">Milestones of the District · 1870–1970</p>
+      <div class="chron-list">${w.events.map(e => `<div class="chron-line"><b>${e.year}</b><span>— ${e.name}; <i>${e.clause}</i>.</span></div>`).join('')}</div>
+      <p class="hand-note">Half this family can be dated by these. — ${N.auntFirst[ 0 ]}.</p></div>`
+      });
+      docs.push({
+        id: 'housebook', icon: 'home', start: true, clueLines: [],
+        title: `A Rough Inventory of ${N.house}`, sub: 'kept for no good reason, kept anyway',
+        body: `<div class="d-book"><h4>${N.house}</h4><h5>a rough inventory, kept for no good reason</h5>
+      <div class="book-line"><span>the gate</span><i>the name still legible, the latch complaining</i></div>
+      ${N.rooms.map((r, i) => `<div class="book-line"><span>${r}</span><i>${ROOMITEMS[ i % ROOMITEMS.length ]}</i></div>`).join('')}
+      <div class="book-line"><span>the landing shelf</span><i>${N.motif.name}</i></div>
+      <div class="book-line"><span>the parlour desk</span><i>the papers that sent you this trunk</i></div>
+      <p class="book-note">The house keeps everything; it has simply been waiting for someone to ask in order.</p></div>`});
+
+      const extras = [];
+      const census = byKind('census');
+      if (census.length)
+      {
+        stamp(census, 'census');
+        extras.push({
+          _objs: census, icon: 'list', clueLines: clueLines(census),
+          title: 'Census Return, 1911', sub: census.length + ' households, enumerated together',
+          body: `<div class="d-type">${census.map(c => c.frag).join('')}</div>`
+        });
+      }
+      const census01 = byKind('census01');
+      if (census01.length)
+      {
+        stamp(census01, 'census01');
+        extras.push({
+          _objs: census01, icon: 'list', clueLines: clueLines(census01),
+          title: 'Census Return, 1901', sub: 'an earlier return, water-blotted',
+          body: `<div class="d-type">${census01.map(c => c.frag).join('')}<p class="hand-note">Damp has taken the relation column; the ages survived.</p></div>`
+        });
+      }
+      const register = byKind('register');
+      if (register.length)
+      {
+        stamp(register, 'register');
+        extras.push({
+          _objs: register, icon: 'book', clueLines: clueLines(register),
+          title: 'Register of Marriages', sub: register.length + ' ceremonies, copied out',
+          body: `<div class="d-book"><h4>Register of Marriages</h4><h5>parish of ${w.towns[ 0 ]} &amp; county records</h5>
+      ${register.map(c => c.frag).join('')}
+      <p class="hand-note">In the margin beside the first entry, a later hand: &ldquo;a fair day for it, by all accounts.&rdquo;</p>
+      <p class="book-note">The registrar's hand fades in places; the ages remain legible.</p></div>`});
+      }
+      const abstract = byKind('abstract');
+      if (abstract.length)
+      {
+        stamp(abstract, 'abstract');
+        extras.push({
+          _objs: abstract, icon: 'calc', clueLines: clueLines(abstract),
+          title: 'General Abstract, 1911', sub: 'compiled totals and the clerk\u2019s age roll',
+          body: `<div class="d-type"><p class="cens-head">GENERAL ABSTRACT — COMPILED FROM THE ENUMERATION BOOKS, 1911</p>
+      ${abstract.map(c => c.frag).join('')}
+      <p class="hand-note">The clerk counted twice; the totals are exact.</p></div>`});
+      }
+      const directory = byKind('directory');
+      if (directory.length)
+      {
+        stamp(directory, 'directory');
+        extras.push({
+          _objs: directory, icon: 'shop', clueLines: clueLines(directory),
+          title: 'Trade Directory', sub: 'two editions, bound as one',
+          body: `<div class="d-type"><p class="cens-head">TRADE DIRECTORY — ${w.towns[ 0 ].toUpperCase()} &amp; DISTRICT · EDITIONS 1905 &amp; 1935</p>
+      <table><tr><th>Name</th><th>Trade</th></tr>${directory.map(c => c.frag).join('')}</table>
+      <p class="hand-note">Bound together by someone who meant to keep track.</p></div>`});
+      }
+      const letter = byKind('letter');
+      if (letter.length)
+      {
+        stamp(letter, 'letter');
+        const nEnt = Object.entries(N.nicks);
+        const nickNote = nEnt.length >= 2
+          ? `The family said &ldquo;${nEnt[ 0 ][ 1 ]}&rdquo; for one of the names below, and &ldquo;${nEnt[ 1 ][ 1 ]}&rdquo; for another — the index keeps both, as families do.`
+          : '';
+        extras.push({
+          _objs: letter, icon: 'letter', clueLines: clueLines(letter),
+          title: 'A Letter from Great-Aunt ' + w.auntFirst, sub: 'undated, but the handwriting is sure',
+          body: `<div class="d-hand">
+      <p>From the front room at ${N.house} — I write while the light lasts.</p>
+      ${letter.map(c => c.frag).join('')}
+      <p>${N.voice.interject}</p>
+      ${N.era2 ? `<p>I remember ${N.era2.t}. You cannot — which is precisely why I am writing it down.</p>` : ''}
+      ${nickNote ? `<p>${nickNote}</p>` : ''}
+      <p>And still on its shelf, ${N.motif.letter} — some things outlast the paperwork.</p>
+      <p class="signed">${N.voice.sign(w.auntFirst)}</p></div>`
+        });
+      }
+      const album = byKind('album');
+      if (album.length)
+      {
+        stamp(album, 'album');
+        extras.push({
+          _objs: album, icon: 'album', clueLines: clueLines(album),
+          title: 'The Photograph Album', sub: 'captions in pencil, memories in ink',
+          body: `<div class="d-hand brown">${album.map(c => c.frag).join('')}
+      <p class="signed">— someone has written names on the backs. Some of them.</p></div>`});
+      }
+      const parish = byKind('parish');
+      if (parish.length)
+      {
+        stamp(parish, 'parish');
+        extras.push({
+          _objs: parish, icon: 'seal', clueLines: clueLines(parish),
+          title: 'Parish Registers', sub: 'burials, baptisms &amp; bells',
+          body: `<div class="d-book"><h4>Parish Registers</h4><h5>burials, baptisms &amp; bells</h5>
+      ${parish.map(c => c.frag).join('')}<p class="book-note">Entries in three different hands.</p></div>`
+        });
+      }
+      const keepsake = byKind('keepsake');
+      if (keepsake.length)
+      {
+        stamp(keepsake, 'keepsake');
+        extras.push({
+          _objs: keepsake, icon: 'card', clueLines: clueLines(keepsake),
+          title: 'Keepsakes & Marginalia', sub: 'notes left in books and tins',
+          body: `<div class="d-hand brown">${keepsake.map(c => c.frag).join('')}
+      <p>${N.motif.keeps}.</p></div>`
+        });
+      }
+      /* the postscript — narrative corroboration, no new logic.
+         Its author is decided at generation time and revealed in the epilogue. */
+      const psPool = chosen.filter(c => [ 'letter', 'keepsake', 'parish', 'album' ].includes(c.kind)).slice(0, 2);
+      if (psPool.length)
+      {
+        extras.push({
+          _objs: [], icon: 'letter', clueLines: [], postscript: true,
+          title: 'A Postscript, in Another Hand', sub: 'on the back of the last photograph',
+          body: `<div class="d-hand brown">
+      <p>${N.motif.name[ 0 ].toUpperCase() + N.motif.name.slice(1)} — they will tell you it means nothing. It means everything; that is the arrangement.</p>
+      ${psPool.map(c => {
+            const attrib = { letter: 'as your great-aunt had it', keepsake: 'as the tin remembered', parish: 'as the parish roll shows', album: 'as the album insists' }[ c.kind ];
+            return `<p>&ldquo;${c.short}&rdquo; — ${attrib}. The same story, another tongue; believe it twice.</p>`;
+          }).join('')}
+      <p>Papers are formal; families are not. Hold both, and the tree will hold.</p>
+      <p>P.S. — the hand writes fast, the way people do who have read over shoulders for years.</p>
+      <p class="signed">— the hand is not labelled. The ink is the same as the marginalia.</p></div>`});
+      }
+      extras.forEach(d => {
+        mapFrames(d._objs, d.title);
+        d._objs.forEach(c => c._doc = d.title);
+        d._step = d._objs.length ? Math.min(99, ...d._objs.flatMap(c => c.frames.map(f => stepOf[ f ] != null ? stepOf[ f ] : 99))) : 99;
+      });
+      extras.sort((a, b) => a._step - b._step);
+      extras.forEach((d, i) => {
+        const frac = extras.length === 1 ? 0 : i / (extras.length - 1);
+        d.need = Math.max(2, Math.min(10, Math.round(2 + 8 * frac)));
+        d.lockText = `opens when ${d.need} frames are sketched`;
+        delete d._objs; delete d._step;
+      });
+      docs.push(...extras);
+      docs.push({
+        id: 'epilogue', icon: 'letter', title: 'One Last Letter', sub: 'sealed until the tree is whole',
+        finale: true, lockText: 'opens when the tree is whole', clueLines: [], body: ''
+      });
+      /* provenance — every paper arrived with a history; rooms sometimes tell it */
+      docs.forEach(d => {
+        const pool = PROVS[ d.id ] || PROVS.index;
+        d.prov = (N.rooms.length && rng() < 0.45) ? `found in ${PK(N.rooms)}, ${PK(ROOMFLAV)}` : PK(pool);
+      });
+      return docs;
+    }
+
+    /* ================================================================
+       8. icons & silhouettes
+    ================================================================ */
+    const I = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+    const ICONS = {
+      letter: I('<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M3 7.5l9 6 9-6"/>'),
+      seal: I('<circle cx="12" cy="9" r="4.2"/><path d="M9.6 12.6L8 20l4-2 4 2-1.6-7.4"/>'),
+      list: I('<path d="M5 7h.01M9 7h10M5 12h.01M9 12h10M5 17h.01M9 17h10"/>'),
+      news: I('<rect x="4" y="5" width="16" height="14" rx="1"/><path d="M7 9h6M7 12h6M7 15h10M15.5 9h1.5"/>'),
+      book: I('<path d="M12 6c-2-1.4-5-1.5-8-.5V19c3-1 6-.9 8 .5 2-1.4 5-1.5 8-.5V5.5c-3-1-6-.9-8 .5Z"/><path d="M12 6v13.5"/>'),
+      cert: I('<circle cx="12" cy="9" r="4.2"/><path d="M9.6 12.6L8 20l4-2 4 2-1.6-7.4"/><path d="M10.4 9l1.2 1.2L14 7.8"/>'),
+      card: I('<rect x="4" y="5.5" width="16" height="13" rx="1.5"/><path d="M12 14.6s-3.1-1.9-3.1-3.6c0-1 .8-1.7 1.7-1.7.6 0 1.1.3 1.4.8.3-.5.8-.8 1.4-.8.9 0 1.7.7 1.7 1.7 0 1.7-3.1 3.6-3.1 3.6Z"/>'),
+      shop: I('<path d="M4.5 9L6 5h12l1.5 4"/><path d="M5 9v10h14V9"/><path d="M9.5 19v-5h5v5"/>'),
+      album: I('<rect x="4" y="4" width="16" height="16" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M4 17l5-5 3 3 4-4 4 4"/>'),
+      calc: I('<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 6.5h8"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/>'),
+      grid: I('<rect x="3.5" y="3.5" width="17" height="17" rx="1"/><path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17"/>'),
+      home: I('<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-6h4v6"/>'),
+      lock: I('<path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3"/><rect x="6" y="11" width="12" height="9" rx="1"/>'),
+      sound: I('<path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16 9.5c1.4 1.4 1.4 3.6 0 5M18.5 7.5c2.4 2.4 2.4 6.6 0 9"/>'),
+      mute: I('<path d="M4 10v4h4l5 4V6l-5 4H4Z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>'),
+      restart: I('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M6.5 3.5v3.6h3.6"/>'),
+      newfam: I('<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>'),
+      close: I('<path d="M6 6l12 12M18 6L6 18"/>'),
+      check: I('<path d="M4.5 12.5l5 5 10-11"/>'),
+      notes: I('<path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M9 8h6M9 12h6M9 16h4"/>'),
+      lamp: I('<path d="M12 3c1.8 1.6 2.6 3 2.6 4.4A2.6 2.6 0 0 1 12 10a2.6 2.6 0 0 1-2.6-2.6C9.4 6 10.2 4.6 12 3Z"/><path d="M7.5 13.5h9l-1.4 5.5h-6.2l-1.4-5.5Z"/><path d="M12 10v3.5M8.5 21h7"/>'),
+      eraser: I('<path d="M7 17l-3.6-3.6a1.5 1.5 0 0 1 0-2.1l6.9-6.9a1.5 1.5 0 0 1 2.1 0l5.2 5.2a1.5 1.5 0 0 1 0 2.1L12 17H7Z"/><path d="M5.5 21h13"/>')
+    };
+    function sil(sex, tone) {
+      const head = 'c-9.6 0-17.4 7.6-17.4 17 0 ';
+      const female = '<path class="sil" d="M50 21' + head + '6.3 3.4 11.8 8.5 14.6-1 3.5-3.1 6-6.8 7.8C24.5 65.2 17.6 75 16 120h68C82.4 75 75.5 65.2 65.7 60.4c-3.7-1.8-5.8-4.3-6.8-7.8 5.1-2.8 8.5-8.3 8.5-14.6 0-9.4-7.8-17-17.4-17Z"/><circle class="sil" cx="65.5" cy="25" r="7.5"/>';
+      const male = '<path class="sil" d="M50 21' + head + '6.5 3.6 12.1 8.9 14.8-1.2 3.7-3.5 6.3-7.6 8.2C23.5 66 16.5 76 15 120h70C83.5 76 76.5 66 66.1 61c-4.1-1.9-6.4-4.5-7.6-8.2 5.3-2.7 8.9-8.3 8.9-14.8 0-9.4-7.8-17-17.4-17Z"/>' + (tone ? `<path d="M50 84l-8.5 19h17Z" fill="${tone}"/>` : '');
+      return `<svg viewBox="0 0 100 120" aria-hidden="true">${sex === 'f' ? female : male}</svg>`;
+    }
+
+    /* ================================================================
+       9. state & persistence
+    ================================================================ */
+    const SAVE_KEY = 'family-archive-v3';
+    const REC_KEY = 'family-archive-records-v1';
+    let W = null, DOCS = [], TOTAL_CLUES = 0, SEED = null, DIFF = 1, CLUES = [], RATING = 3, PAR = 25, ERR_FRAME = null;
+    const state = {
+      place: {}, inked: new Set(), read: new Set(), unlocked: new Set(), selected: null,
+      checked: {}, audits: 0, whispers: 0, complete: false, indexReady: false, played: 0, _t: 0,
+      marks: {}, hintLevel: {}, annotate: false, errQ: false, errHint: false, inscribed: {}
+    };
+    const $ = id => document.getElementById(id);
+    const stage = $('treestage'), vp = $('treeviewport'), wires = $('wires');
+    let lastDrop = 0, links = [], replaying = false;
+    const sketchedCount = () => Object.keys(state.place).length;
+    function tickTime() { const n = Date.now(); if (!state.complete) state.played += n - (state._t || n); state._t = n; }
+    function saveState() {
+      if (!W) return;
+      tickTime();
+      try
+      {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          v: 3, seed: SEED, diff: DIFF, fam: W.S,
+          st: {
+            place: state.place, inked: [ ...state.inked ], read: [ ...state.read ], unlocked: [ ...state.unlocked ],
+            checked: state.checked, audits: state.audits, whispers: state.whispers, complete: state.complete,
+            indexReady: state.indexReady, played: Math.round(state.played),
+            marks: state.marks, hintLevel: state.hintLevel, errQ: state.errQ, errHint: state.errHint
+          }
+        }));
+      } catch (e) { }
+    }
+    function loadSave() { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY)); if (j && j.v === 3) return j; } catch (e) { } return null; }
+    function loadRecs() { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {} } catch (e) { return {} } }
+    function saveRecs(r) { try { localStorage.setItem(REC_KEY, JSON.stringify(r)) } catch (e) { } }
+    function todayKey() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+    setInterval(() => { if (W && !state.complete && !replaying) saveState(); }, 15000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden && !replaying) saveState(); });
+
+    /* ================================================================
+       10. wires
+    ================================================================ */
+    const NW = 140;
+    function elbow(x0, y0, x1, y1, ry) {
+      if (Math.abs(x1 - x0) < 1.5) return `M ${x0} ${y0} L ${x1} ${y1}`;
+      const r = Math.min(9, Math.abs(x1 - x0) / 2, Math.abs(ry - y0), Math.abs(y1 - ry));
+      const sx = x1 > x0 ? 1 : -1, dy = y1 >= ry ? 1 : -1;
+      return `M ${x0} ${y0} L ${x0} ${ry - r} Q ${x0} ${ry} ${x0 + sx * r} ${ry} L ${x1 - sx * r} ${ry} Q ${x1} ${ry} ${x1} ${ry + dy * r} L ${x1} ${y1}`;
+    }
+    function addPath(d, cls) { const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); p.setAttribute('class', cls); wires.appendChild(p); return p; }
+    function resetWires() {
+      wires.innerHTML = ''; links = [];
+      COUPLES.forEach(c => {
+        const a = SLOTS[ c[ 0 ] ], b = SLOTS[ c[ 1 ] ], y = a.y + 42;
+        addPath(`M ${a.x + NW} ${y} L ${b.x} ${y}`, 'guide');
+        links.push({ need: [ c[ 0 ], c[ 1 ] ], ink: addPath(`M ${a.x + NW} ${y} L ${b.x} ${y}`, 'ink') });
+      });
+      CHILDREN.forEach(g => {
+        const pa = SLOTS[ g.p[ 0 ] ], pb = SLOTS[ g.p[ 1 ] ];
+        const midX = (pa.x + NW + pb.x) / 2, barY = pa.y + 42, rail = g.g === 3 ? 199 : g.g === 2 ? 399 : null;
+        g.c.forEach(cid => {
+          const ch = SLOTS[ cid ];
+          const d = rail == null ? `M ${midX} ${barY} L ${midX} ${ch.y}` : elbow(midX, barY, ch.x + NW / 2, ch.y, rail);
+          addPath(d, 'guide');
+          links.push({ need: [ ...g.p, cid ], ink: addPath(d, 'ink') });
+        });
+      });
+    }
+    function confirmLinks(animate) {
+      links.forEach(l => {
+        if (l.on || !l.need.every(f => state.inked.has(f))) return;
+        l.on = true;
+        if (animate === false) { l.ink.style.visibility = 'visible'; return; }
+        const p = l.ink, len = p.getTotalLength();
+        p.style.strokeDasharray = len; p.style.strokeDashoffset = len; p.style.visibility = 'visible';
+        p.getBoundingClientRect();
+        p.style.transition = 'stroke-dashoffset .9s ease .12s'; p.style.strokeDashoffset = 0;
+        setTimeout(() => { p.style.strokeDasharray = 'none' }, 1150);
+        snd('ink');
+      });
+    }
+
+    /* ================================================================
+       11. slots
+    ================================================================ */
+    function createSlots() {
+      stage.querySelectorAll('.slot,.glabel,.tickpop').forEach(e => e.remove());
+      [ [ 'I — great-grandparents', 24 ], [ 'II — grandparents & kin', 224 ], [ 'III — parents & kin', 424 ], [ 'IV — you', 596 ] ]
+        .forEach(([ t, y ]) => { const g = document.createElement('div'); g.className = 'glabel'; g.style.top = (y + 32) + 'px'; g.textContent = t; stage.appendChild(g); });
+      let i = 0;
+      for (const fk of FK)
+      {
+        const s = SLOTS[ fk ], p = W.P[ fk ];
+        const el = document.createElement('div');
+        el.className = 'slot born'; el.dataset.slot = fk;
+        el.style.left = s.x + 'px'; el.style.top = s.y + 'px'; el.style.animationDelay = (i++ * 40) + 'ms';
+        el.innerHTML = `<div class="frame"><span class="qmark">?</span><div class="photo empty">${sil(p.sex)}</div>
+      <span class="pname"></span><span class="pdates"></span><span class="marks"></span><span class="stamp">confirmed</span></div>
+      <div class="tag">${CAPTIONS[ fk ]}</div>`;
+        stage.appendChild(el);
+        paintFrame(fk);
+      }
+    }
+    function subline(p) {
+      const a = [ `b. ${p.b}${p.d ? ' – ' + p.d : ''}` ];
+      if (p.occ) a.push('the ' + p.occ);
+      if (p.mar) a.push('m. ' + p.mar + (p.sur !== W.S ? ' · née ' + p.sur : ''));
+      return a.join(' · ');
+    }
+    function insOf(fk) {
+      const N = W.N, p = W.P[ fk ];
+      return `${p.first} ${p.mar ? W.S : p.sur} — a ${N.months[ fk ]} child, ${N.traits[ fk ]}.`;
+    }
+    function paintFrame(fk) {
+      const el = stage.querySelector(`.slot[data-slot="${fk}"]`); if (!el) return;
+      const p = W.P[ fk ], ph = el.querySelector('.photo'), pn = el.querySelector('.pname'),
+        pd = el.querySelector('.pdates'), mk = el.querySelector('.marks');
+      el.classList.remove('pencil', 'inked', 'queried');
+      mk.innerHTML = ''; pn.style.display = ''; pd.style.display = '';
+      if (state.inked.has(fk))
+      {
+        el.classList.add('inked');
+        ph.classList.remove('empty'); ph.style.background = TONES[ fk ]; ph.innerHTML = sil(p.sex, TONES[ fk ]);
+        pn.textContent = `${p.first} ${p.mar ? W.S : p.sur}`; pd.textContent = subline(p);
+      } else if (state.place[ fk ] != null)
+      {
+        el.classList.add('pencil');
+        const card = PEOPLE[ state.place[ fk ] ];
+        ph.classList.remove('empty'); ph.style.background = ''; ph.innerHTML = sil(p.sex);
+        pn.textContent = `${card.first} ${card.sur}`; pd.textContent = '';
+      } else
+      {
+        ph.classList.add('empty'); ph.style.background = ''; ph.innerHTML = sil(p.sex);
+        pn.textContent = ''; pd.textContent = '';
+        const marks = state.marks[ fk ] || [];
+        if (marks.length)
+        {
+          pn.style.display = 'none'; pd.style.display = 'none';
+          const shown = marks.slice(0, 4).map(i => `<span class="mk">${PEOPLE[ i ].first.slice(0, 3)}</span>`).join('');
+          mk.innerHTML = shown + (marks.length > 4 ? `<span class="mk">+${marks.length - 4}</span>` : '');
+        }
+      }
+    }
+
+    /* ================================================================
+       12. ledger & docs
+    ================================================================ */
+    function cardInner(idx) {
+      const p = PEOPLE[ idx ];
+      const nick = W.N && W.N.nicks[ FK[ idx ] ];
+      const note = idx === FI.you ? 'that would be you' : (p.mar && p.sur !== W.S ? 'm. into the ' + W.S + ' family' : '');
+      return `<span class="pthumb">${sil(p.sex)}</span><span class="pinfo"><b>${p.first} ${p.sur}</b><i>${nick ? `\u201C${nick}\u201D \u00B7 ` : ''}${note}</i></span>`;
+    }
+    function renderLedger() {
+      const box = $('ledger');
+      if (!state.indexReady) { box.innerHTML = '<p class="empty-note">Open the <b>Index of Names</b> in the trunk to begin.</p>'; return; }
+      const placedVals = Object.values(state.place);
+      box.innerHTML = PEOPLE.map((p, idx) => {
+        const conf = state.inked.has(FK[ idx ]);
+        const placed = !conf && placedVals.includes(idx);
+        return `<button class="pcard${conf ? ' confirmed' : placed ? ' placed' : ''}${state.selected === idx ? ' selected' : ''}" data-person="${idx}">
+      ${cardInner(idx)}<span class="stamp">${conf ? 'confirmed' : 'sketched'}</span></button>`;
+      }).join('');
+    }
+    const newly = new Set();
+    function renderDocs() {
+      $('doclist').innerHTML = DOCS.map(d => {
+        const locked = !state.unlocked.has(d.id);
+        const mark = locked ? ICONS.lock
+          : state.read.has(d.id) ? `<span class="dmark read" title="read">${ICONS.check}</span>`
+            : `<span class="dmark new">new</span>`;
+        const clueTag = d.clueLines && d.clueLines.length && state.read.has(d.id) ? `<span class="dmark clues">+${d.clueLines.length}</span>` : '';
+        return `<button class="doc${locked ? ' locked' : ''}${newly.has(d.id) ? ' arrive' : ''}" data-doc="${d.id}">
+      <span class="dicon">${locked ? ICONS.lock : ICONS[ d.icon ]}</span>
+      <span class="dtext"><b>${d.title}</b><i>${locked ? d.lockText : d.sub}</i></span>${clueTag}${mark}</button>`;
+      }).join('');
+      newly.clear();
+    }
+
+    /* ================================================================
+       13. evidence engine — the truth-free half of the solver:
+          an alive-mask built only from what has been read and inked
+    ================================================================ */
+    function evidenceMask() {
+      const m = new Uint32Array(ALL_MASK);
+      CLUES.forEach(c => { if (state.read.has(c._docId)) for (let i = 0; i < WORDS; i++) m[ i ] &= c._mask[ i ]; });
+      state.inked.forEach(fk => {
+        const p = state.place[ fk ], cm = COL[ FI[ fk ] ][ p ];
+        if (cm) for (let i = 0; i < WORDS; i++) m[ i ] &= cm[ i ];
+      });
+      return m;
+    }
+    function possibleAt(fk, ev) {
+      const out = [];
+      for (let p = 0; p < 11; p++)
+      {
+        const cm = COL[ FI[ fk ] ][ p ]; if (!cm) continue;
+        if (masksIntersect(cm, ev)) out.push(p);
+      }
+      return out;
+    }
+    function culpritsFor(fk, p) {
+      const cm = COL[ FI[ fk ] ][ p ]; if (!cm) return [];
+      return CLUES.filter(c => state.read.has(c._docId) && !masksIntersect(c._mask, cm));
+    }
+    function spotFrames(cl) {
+      (cl.frames || []).forEach(fk => {
+        const el = stage.querySelector(`.slot[data-slot="${fk}"]`);
+        if (el) { el.classList.add('spot'); setTimeout(() => el.classList.remove('spot'), 2600); }
+      });
+    }
+
+    /* ================================================================
+       14. reader / bio / notes / worksheet / derivation
+    ================================================================ */
+    function notedCount() { return DOCS.reduce((n, d) => n + (state.read.has(d.id) ? d.clueLines.length : 0), 0); }
+    function openDoc(id) {
+      const d = DOCS.find(x => x.id === id);
+      if (!state.unlocked.has(d.id)) { toast('Sealed — ' + d.lockText); snd('reject'); return; }
+      const first = !state.read.has(d.id);
+      state.read.add(id);
+      if (d.populates && !state.indexReady) { state.indexReady = true; toast('Eleven names, entered into the index.'); }
+      renderDocs(); renderLedger(); updateStats(); saveState();
+      const added = first && d.clueLines.length ? d.clueLines.length : 0;
+      if (first && d.prov) toast('Found — ' + d.prov + '.');
+      let foot;
+      if (d.finale)
+      {
+        foot = `<div class="finstats"><span>${rank()}</span>
+      <span>${fmtTime(state.played)} vs par ${PAR} min · ${[ 'apprentice', 'historian', 'archivist' ][ DIFF ]} trunk · difficulty ${'✦'.repeat(RATING)}${'✧'.repeat(5 - RATING)} · ${state.audits} audit${state.audits === 1 ? '' : 's'} · ${state.whispers} whisper${state.whispers === 1 ? '' : 's'}</span></div>
+      <div class="finbtns"><button class="btn" id="show-deriv">The registrar&rsquo;s reasoning</button><button class="btn red" id="replay-btn">Replay the deduction</button><button class="btn" id="copyres">Copy result</button><button class="btn" id="admire">Admire the tree</button><button class="btn red" id="newfam">A different trunk</button></div>`;
+      } else if (added)
+      {
+        foot = `<div class="rfoot"><span class="lbl">Noted</span><i style="font-size:12.5px;color:var(--ink2)">${added} clue${added === 1 ? '' : 's'} added to your case notes.</i>
+      <button class="btn" style="margin-left:auto" id="open-notes">Open case notes</button></div>`;
+      } else if ((d.postscript || d.id === 'housebook') && first)
+      {
+        foot = `<div class="rfoot"><span class="lbl">Note</span><i style="font-size:12px;color:var(--ink3)">Nothing new for the ledger — only the family, and its house, in another voice.</i></div>`;
+      } else
+      {
+        foot = `<div class="rfoot"><span class="lbl">Note</span><i style="font-size:12px;color:var(--ink3)">Already among your papers.</i></div>`;
+      }
+      const exHtml = d._ex ? `<div class="executor"><h4>The Executor&rsquo;s Question</h4><p>${d._ex.q}</p>
+    <div class="exrow">${d._ex.options.map((o, i) => `<button class="btn exbtn" data-i="${i}">${o}</button>`).join('')}</div></div>` : '';
+      const provHtml = d.prov ? `<p class="provline">✰ ${d.prov}.</p>` : '';
+      $('reader-card').innerHTML = `
+    <div class="rhead"><span class="dicon">${ICONS[ d.icon ]}</span>
+      <div><h3>${d.title}</h3><i>${d.sub}</i></div>
+      <button class="icobtn rclose" aria-label="Close">${ICONS.close}</button></div>
+    <div class="docbody">${d.body}${exHtml}${provHtml}</div>${foot}`;
+      $('reader').classList.add('open');
+      $('reader-card').querySelector('.rclose').onclick = () => $('reader').classList.remove('open');
+      if (d.finale)
+      {
+        $('admire').onclick = () => $('reader').classList.remove('open');
+        $('newfam').onclick = () => { $('reader').classList.remove('open'); newTrunk(); };
+        $('show-deriv').onclick = openDerivation;
+        $('replay-btn').onclick = replayDerivation;
+        $('copyres').onclick = copyResult;
+        if (d._ex)
+        {
+          $('reader-card').querySelectorAll('.exbtn').forEach(b => b.onclick = () => {
+            if (d._ex.done) return;
+            if (+b.dataset.i === d._ex.answer)
+            {
+              d._ex.done = true; b.classList.add('sel');
+              $('reader-card').querySelectorAll('.exbtn').forEach(x => x.disabled = true);
+              const recs = loadRecs(); recs.executor = (recs.executor || 0) + 1; saveRecs(recs);
+              toast('The executor nods slowly, and makes a note in the margin. Commendation earned.');
+              snd('reveal');
+            } else
+            {
+              b.disabled = true; b.style.opacity = .4;
+              toast('The executor raises an eyebrow. Consider the tree again.');
+              snd('reject');
+            }
+          });
+        }
+      }
+      if (foot && foot.includes('open-notes')) $('open-notes').onclick = () => { $('reader').classList.remove('open'); openNotes(); };
+      if (added) { toast(added + ' clue' + (added === 1 ? '' : 's') + ' noted from “' + d.title + '”'); snd('reveal'); }
+      snd('flip');
+    }
+    function openDerivation() {
+      const rows = DERIV.map((s, i) => {
+        const p = W.P[ s.fk ];
+        const docs = [ ...new Set((s.wits || []).map(c => c._doc).filter(Boolean)) ];
+        const src = docs.length ? docs.join(' + ') : 'the papers as a whole';
+        const tech = TECHS[ stepTech(s) ];
+        return `<div class="chron-line"><b>${i + 1}</b><span>${CAPTIONS[ s.fk ]} — <b style="font-family:'IM Fell English',serif;font-weight:400">${p.first} ${p.mar ? W.S : p.sur}</b><br><i style="color:var(--ink3);font-size:12px">by ${tech} — forced by the ${src}</i></span></div>`;
+      }).join('');
+      $('notes').classList.remove('open');
+      $('reader-card').innerHTML = `
+    <div class="rhead"><span class="dicon">${ICONS.seal}</span>
+      <div><h3>The Registrar&rsquo;s Reasoning</h3><i>Trunk № ${SEED} — every step forced, none guessed</i></div>
+      <button class="icobtn rclose" aria-label="Close">${ICONS.close}</button></div>
+    <p class="mut" style="text-align:center;margin-bottom:10px">&ldquo;${W.N.voice.aside}&rdquo;</p>
+    <p class="mut" style="margin-bottom:12px">The order in which each frame becomes unavoidable — the technique that settles it, and the minimal papers doing the forcing.</p>
+    <div class="chron-list">${rows}</div>
+    <div class="finbtns"><button class="btn red" id="deriv-replay">Replay the deduction on the tree</button></div>`;
+      $('reader').classList.add('open');
+      $('reader-card').querySelector('.rclose').onclick = () => $('reader').classList.remove('open');
+      $('deriv-replay').onclick = replayDerivation;
+      snd('flip');
+    }
+    function openWorksheet() {
+      closeTickPop();
+      $('notes').classList.remove('open');
+      const ev = evidenceMask();
+      const poss = {}; FK.forEach(fk => poss[ fk ] = new Set(possibleAt(fk, ev)));
+      const head = PEOPLE.map(p => `<th title="${p.first} ${p.sur}">${p.first.slice(0, 3)}</th>`).join('');
+      const rows = FK.map(fk => {
+        const inked = state.inked.has(fk), placed = state.place[ fk ];
+        const marks = new Set(state.marks[ fk ] || []);
+        const cells = PEOPLE.map((p, pi) => {
+          let cls = '', txt = '';
+          if (inked && FI[ fk ] === pi) { cls = 'wink'; txt = '✓'; }
+          else if (!inked && placed === pi) { cls = 'wsk'; txt = '◦'; }
+          else if (marks.has(pi)) { cls = 'wtick'; txt = '•'; }
+          else if (!poss[ fk ].has(pi)) { cls = 'wex'; }
+          return `<td class="${cls}" data-fk="${fk}" data-p="${pi}" title="${p.first} ${p.sur}">${txt}</td>`;
+        }).join('');
+        return `<tr class="whover"><th class="wrow">${CAPTIONS[ fk ]}${inked ? ` — ${PEOPLE[ FI[ fk ] ].first}` : ''}</th>${cells}</tr>`;
+      }).join('');
+      $('wksheet-card').innerHTML = `
+    <div class="rhead"><span class="dicon">${ICONS.grid}</span>
+      <div><h3>The Deduction Worksheet</h3><i>Trunk № ${SEED} — click a square to pencil-tick a candidate</i></div>
+      <button class="icobtn rclose" aria-label="Close">${ICONS.close}</button></div>
+    <div class="wscroll"><table class="wtable"><thead><tr><th class="wrow">frame ↓ · name →</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="wlegend"><span><b>✓</b> inked</span><span><b>◦</b> sketched</span><span><b>•</b> ticked</span><span style="text-decoration:line-through"><b>&nbsp;&nbsp;</b>&nbsp;ruled out by papers read</span><span><b>&nbsp;</b> open</span></div>
+    <p class="mut" style="margin-top:12px;text-align:center">Struck squares come from the papers <em>you have read</em> — cross-check and the ticks never consult the answer. Ticks here match the pencil marks on the tree.</p>`;
+      $('wksheet').classList.add('open');
+      $('wksheet-card').querySelector('.rclose').onclick = () => $('wksheet').classList.remove('open');
+      $('wksheet-card').querySelectorAll('td[data-fk]').forEach(td => {
+        td.onclick = () => {
+          const fk = td.dataset.fk, pi = +td.dataset.p;
+          if (state.inked.has(fk)) return;
+          toggleMark(fk, pi);
+          openWorksheet();
+        };
+      });
+      snd('flip');
+    }
+    function bioFor(fk) {
+      const p = W.P[ fk ], S = W.S, M = k => W.couples.find(c => c[ 0 ] === k || c[ 1 ] === k)[ 2 ], N = W.N;
+      const B = {
+        h1: `${p.first} ${S} was born in ${p.b} at ${p.place} and kept the ${p.occ} there for ${p.yrs} years. He married ${W.P.w1.first} ${W.P.w1.sur} in ${M('h1')}; the house on ${p.street} is the one in every photograph.`,
+        w1: `${p.first} ${p.sur} married the ${W.P.h1.occ} in ${M('h1')}. She kept every letter she was ever sent — which is why this trunk exists.`,
+        h2: `${p.first} ${S}, born ${p.b}, was the ${p.occ} on ${p.street}: exact about dosages, exact about tardiness. Died ${p.d}.`,
+        w2: `${p.first} ${p.sur} married the ${W.P.h2.occ} in ${M('h2')}. Her christening gown is folded at the bottom of this trunk, four generations long.`,
+        c1: `${p.first} ${S}, born ${p.b}, worked as the town's ${p.occ} for ${p.yrs} years. In ${M('c1')} he married the ${W.P.h2.occ}'s daughter.`,
+        c2: `${p.first} ${S}, born ${p.b}, was the village ${p.occ} for ${p.yrs} years. After that she was the keeper of paper — this paper.`,
+        c3: `${p.first} ${S}, born ${p.b}, ran the post office counter for ${p.yrs} years and knew everyone's business; which is to say, everyone's birthday.`,
+        c4: `${p.first} ${S}, born ${p.b}, took up the ${p.occ} like his father before him. He married ${W.P.e1.first} ${W.P.e1.sur} in ${M('c4')}.`,
+        c5: `${p.first} ${S}, born ${p.b}. The youngest on the tree, and the one who kept its birthdays.`,
+        e1: `${p.first} ${p.sur}, born ${p.b} in ${p.place}, worked as the town ${p.occ} until her marriage in ${M('c4')}.`,
+        you: `You, born ${p.b}. The tree ends with you — and, one day, with someone else's trunk.`
+      };
+      const nick = N.nicks[ fk ];
+      let extra = nick ? ` Known to the family as &ldquo;${nick}&rdquo;, always.` : '';
+      const cp = W.couples.find(c => c.includes(fk));
+      if (cp && N.anecdotes[ cp[ 0 ] ])
+      {
+        const pk2 = cp[ 0 ] === fk ? cp[ 1 ] : cp[ 0 ], pp = W.P[ pk2 ];
+        extra += ` With ${pp.first} ${pp.mar ? W.S : pp.sur}: ${N.anecdotes[ cp[ 0 ] ]}`;
+      }
+      return B[ fk ] + extra;
+    }
+    function openBio(fk) {
+      const p = W.P[ fk ];
+      $('psheet-card').innerHTML = `
+    <div class="rhead"><div><h3>${p.first} ${p.mar ? W.S : p.sur}</h3><i>Generation ${{ h1: 'I', w1: 'I', h2: 'I', w2: 'I', c1: 'II', c2: 'II', c3: 'II', c4: 'III', c5: 'III', e1: 'III', you: 'IV' }[ fk ]}</i></div>
+      <button class="icobtn rclose" aria-label="Close" style="margin-left:auto">${ICONS.close}</button></div>
+    <div class="sheet-top">
+      <div class="sheet-photo" style="background:${TONES[ fk ]}">${sil(p.sex, TONES[ fk ])}</div>
+      <div><div class="sheet-dates">${subline(p)}</div></div></div>
+    <p class="bio">${bioFor(fk)}</p>
+    <p class="sheet-ins">Inscribed on the frame: &ldquo;A ${W.N.months[ fk ]} child, ${W.N.traits[ fk ]}.&rdquo;</p>
+    <p class="src">Confirmed by the registrar's ink</p>`;
+      $('psheet').classList.add('open');
+      $('psheet-card').querySelector('.rclose').onclick = () => $('psheet').classList.remove('open');
+      snd('flip');
+    }
+    function openNotes() {
+      const chips = state.indexReady ? PEOPLE.map((p, i) => `<span class="chip"><span class="pthumb">${sil(p.sex)}</span>${p.first} ${p.sur}</span>`).join('')
+        : '<i class="mut">Read the Index of Names to populate the ledger.</i>';
+      const read = DOCS.filter(d => state.read.has(d.id) && d.clueLines.length);
+      const ev = read.length ? read.map(d => `<div class="notes-doc"><h5>${d.title}</h5>${d.clueLines.map((c, i) => {
+        const key = d.id + ':' + i, done = state.checked[ key ];
+        return `<div class="note-line${done ? ' done' : ''}" data-key="${key}" data-doc="${d.id}" data-i="${i}"><span class="box" title="Mark as used"></span><span class="txt" title="Spot the frames it concerns, and reopen the paper">${c.short}</span></div>`;
+      }).join('')
+        }</div>`).join('')
+        : '<i class="mut">No clues noted yet — examine the trunk\u2019s papers.</i>';
+      const unread = DOCS.filter(d => !d.finale && !state.read.has(d.id)).length;
+      $('notes-card').innerHTML = `
+    <div class="rhead"><span class="dicon">${ICONS.notes}</span>
+      <div><h3>Case Notes</h3><i>Trunk № ${SEED} — the ${W.S} family · difficulty ${'✦'.repeat(RATING)}${'✧'.repeat(5 - RATING)}</i></div>
+      <button class="icobtn rclose" aria-label="Close">${ICONS.close}</button></div>
+    <h4 class="nh">The Index of Names</h4><div class="chiprow">${chips}</div>
+    <h4 class="nh">Evidence</h4>${ev}
+    ${unread ? `<p class="mut" style="margin-top:10px">${unread} paper${unread === 1 ? '' : 's'} still unread. Click a clue to spotlight the frames it concerns.</p>` : ''}
+    <div class="notes-foot"><span>${state.audits} audits</span><span>${state.whispers} whispers</span><span>par ${PAR} min</span><span>${fmtTime(state.played)}</span>
+      <button class="btn" id="ws-btn">Worksheet</button>
+      <button class="btn" id="deriv-btn">Registrar&rsquo;s reasoning</button>
+      <button class="btn" id="whisper-btn">Ask for a whisper</button></div>`;
+      $('notes').classList.add('open');
+      $('notes-card').querySelector('.rclose').onclick = () => $('notes').classList.remove('open');
+      $('whisper-btn').onclick = () => { $('notes').classList.remove('open'); whisper(); };
+      $('deriv-btn').onclick = openDerivation;
+      $('ws-btn').onclick = openWorksheet;
+      $('notes-card').querySelectorAll('.note-line').forEach(l => {
+        l.querySelector('.box').onclick = ev2 => { ev2.stopPropagation(); const k = l.dataset.key; state.checked[ k ] = !state.checked[ k ]; saveState(); openNotes(); };
+        l.querySelector('.txt').onclick = () => {
+          const cl = CLUES.find(x => x._docId === l.dataset.doc && String(x._i) === l.dataset.i);
+          if (cl) spotFrames(cl);
+          $('notes').classList.remove('open'); openDoc(l.dataset.doc);
+        };
+      });
+    }
+
+    /* ================================================================
+       15. placement, audit, cross-check, whisper ladder, replay
+    ================================================================ */
+    function tickWitnesses(fk) {
+      const st = DERIV.find(s => s.fk === fk);
+      if (st) (st.wits || []).forEach(c => { if (c._docId != null && c._i != null) state.checked[ c._docId + ':' + c._i ] = true; });
+    }
+    function placePencil(idx, fk, fromFk) {
+      if (replaying) return;
+      closeTickPop();
+      if (state.inked.has(fk)) { toast('That frame is already confirmed in ink.'); snd('reject'); return; }
+      if (fromFk && fromFk !== fk)
+      {
+        const va = state.place[ fromFk ], vb = state.place[ fk ];
+        if (vb === idx) return;
+        if (va === idx) { if (vb == null) delete state.place[ fromFk ]; else state.place[ fromFk ] = vb; }
+        state.place[ fk ] = idx;
+      } else
+      {
+        for (const k in state.place) if (state.place[ k ] === idx) delete state.place[ k ];
+        state.place[ fk ] = idx;
+      }
+      state.selected = null;
+      FK.forEach(paintFrame); renderLedger(); setHints(); snd('pencil'); updateStats(); checkDocUnlocks(); saveState();
+    }
+    function returnCard(fk) {
+      if (state.inked.has(fk) || state.place[ fk ] == null) return;
+      delete state.place[ fk ]; paintFrame(fk); renderLedger(); updateStats(); saveState(); snd('flip');
+    }
+    function checkDocUnlocks() {
+      let any = false;
+      DOCS.forEach(d => {
+        if (d.need == null || state.unlocked.has(d.id)) return;
+        if (sketchedCount() >= d.need) { state.unlocked.add(d.id); newly.add(d.id); any = true; toast('New paper in the trunk — ' + d.title); }
+      });
+      if (any) { renderDocs(); snd('unlock'); }
+    }
+    function audit() {
+      if (state.complete || replaying) return;
+      closeTickPop();
+      const sk = Object.keys(state.place).map(Number);
+      if (!sk.length) { toast('Sketch at least one frame first — pencil before proof.'); snd('reject'); return; }
+      state.audits++;
+      let right = 0, wrong = 0, fresh = 0, newFk = null;
+      sk.forEach(fk => {
+        const el = stage.querySelector(`.slot[data-slot="${fk}"]`);
+        if (state.place[ fk ] === FI[ fk ])
+        {
+          right++;
+          if (!state.inked.has(fk)) { state.inked.add(fk); fresh++; newFk = fk; tickWitnesses(fk); }
+          paintFrame(fk);
+        } else
+        {
+          wrong++;
+          if (fk === ERR_FRAME) state.errQ = true;
+          el.classList.add('queried');
+        }
+      });
+      renderLedger(); confirmLinks(true); updateStats(); saveState();
+      const blank = 11 - sk.length;
+      toast(fresh === 0 && wrong === 0
+        ? 'The registrar finds nothing to correct. The ledger stands.'
+        : `The registrar's ink confirms ${right} of ${sk.length} sketched${wrong ? `, queries ${wrong}` : ''}.${blank ? ` ${blank} frame${blank === 1 ? ' is' : 's are'} still blank.` : ' The rest remain in pencil.'}`);
+      if (fresh === 1 && !state.inscribed[ newFk ]) { state.inscribed[ newFk ] = true; toast('Inscribed — ' + insOf(newFk)); }
+      snd(fresh > 0 ? 'ink' : wrong > 0 ? 'reject' : 'flip');
+      if (state.inked.size === 11) finale();
+    }
+    function crossCheck() {
+      if (state.complete || replaying) return;
+      closeTickPop();
+      const sk = Object.keys(state.place).map(Number);
+      if (!sk.length) { toast('Nothing sketched yet — cross-check needs pencil on the tree.'); snd('flip'); return; }
+      const ev = evidenceMask();
+      const bad = [];
+      sk.forEach(fk => {
+        const p = state.place[ fk ];
+        if (!possibleAt(fk, ev).includes(p)) bad.push({ fk });
+      });
+      if (!bad.length)
+      {
+        toast(`Cross-check: all ${sk.length} sketched frame${sk.length === 1 ? '' : 's'} sit comfortably with every paper you have read. Consistent — for what that's worth.`);
+        snd('flip'); return;
+      }
+      bad.forEach(b => {
+        const el = stage.querySelector(`.slot[data-slot="${b.fk}"]`);
+        if (el) { el.classList.add('contra'); setTimeout(() => el.classList.remove('contra'), 3200); }
+      });
+      const b = bad[ 0 ], name = PEOPLE[ state.place[ b.fk ] ].first;
+      const culprits = culpritsFor(b.fk, state.place[ b.fk ]);
+      toast(culprits.length
+        ? `Cross-check: the ${CAPTIONS[ b.fk ]} cannot be ${name} — “${culprits[ 0 ].short}” forbids it.`
+        : `Cross-check: taken together, the sketches contradict the papers — at least one placement must move.`);
+      snd('reject');
+    }
+    /* whisper ladder — 1 method, 2 papers, 3 quotes, 4 reveal */
+    function whisper() {
+      if (state.complete || replaying) return;
+      closeTickPop();
+      const t = DERIV.find(s => !state.inked.has(s.fk));
+      if (!t) { toast('The attic is quiet — every frame already stands in ink.'); return; }
+      state.whispers++;
+      const lvl = (state.hintLevel[ t.fk ] || 0) + 1;
+      state.hintLevel[ t.fk ] = lvl;
+      const cap = CAPTIONS[ t.fk ];
+      const tech = stepTech(t);
+      if (lvl === 1)
+      {
+        toast(`A whisper (method): ${METHOD[ tech ]}.`);
+      } else if (lvl === 2)
+      {
+        const docs = [ ...new Set((t.wits || []).map(c => c._doc).filter(Boolean)) ];
+        toast(docs.length
+          ? `A whisper: look again at the ${docs.join(' and the ')} — between them they settle the ${cap}.`
+          : `A whisper: the papers as a whole settle the ${cap} — cross-reference everything you've read.`);
+      } else if (lvl === 3)
+      {
+        const wts = t.wits || [];
+        if (wts.length) spotFrames({ frames: wts.flatMap(c => c.frames) });
+        toast(wts.length
+          ? `A whisper: “${wts[ 0 ].short}”${wts[ 1 ] ? ` — and “${wts[ 1 ].short}”` : ''}${wts.length > 2 ? ' — and more in the same paper.' : ''}`
+          : `A whisper: only elimination settles the ${cap} — cross off everyone who cannot be.`);
+      } else
+      {
+        state.inked.add(t.fk); state.place[ t.fk ] = FI[ t.fk ];
+        if (t.fk === ERR_FRAME) state.errHint = true;
+        tickWitnesses(t.fk);
+        paintFrame(t.fk); renderLedger(); confirmLinks(true); updateStats(); saveState(); snd('reveal');
+        toast(`A whisper, plain at last: the ${cap} is ${insOf(t.fk)}`);
+        if (state.inked.size === 11) finale();
+        return;
+      }
+      saveState(); snd('reveal');
+      updateStats();
+    }
+    function replayDerivation() {
+      if (!state.complete || replaying) return;
+      closeTickPop();
+      [ 'reader', 'psheet', 'notes', 'wksheet' ].forEach(id => $(id).classList.remove('open'));
+      replaying = true;
+      state.inked = new Set(); state.place = {};
+      links.forEach(l => { l.on = false; l.ink.style.visibility = 'hidden'; });
+      FK.forEach(paintFrame); renderLedger(); updateStats();
+      toast('The registrar takes up the pen again. Watch the proof run.');
+      let i = 0;
+      const step = () => {
+        if (i >= DERIV.length)
+        {
+          replaying = false;
+          renderLedger(); updateStats(); saveState();
+          setTimeout(() => { $('seal').classList.add('on'); snd('stamp'); }, 400);
+          toast('The proof has run its course. The tree stands as reasoned.');
+          return;
+        }
+        const st = DERIV[ i ]; const fk = st.fk; i++;
+        state.place[ fk ] = FI[ fk ]; paintFrame(fk); snd('pencil');
+        setTimeout(() => {
+          state.inked.add(fk); paintFrame(fk); confirmLinks(true); renderLedger(); updateStats();
+          const w = (st.wits || []).map(c => c.short)[ 0 ];
+          toast(`Step ${i} — ${TECHS[ stepTech(st) ]}: the ${CAPTIONS[ fk ]} is ${PEOPLE[ FI[ fk ] ].first}${w ? ` — “${w}”` : ''}.`);
+          setTimeout(step, 1500);
+        }, 750);
+      };
+      setTimeout(step, 700);
+    }
+    function rank() {
+      const penalty = state.audits * 1.5 + state.whispers * 1.2 + (DIFF === 0 ? 1 : DIFF === 2 ? -1 : 0);
+      if (penalty <= 1.5) return 'Keeper of the Archive';
+      if (penalty <= 4) return 'Family Historian';
+      if (penalty <= 8) return 'Diligent Archivist';
+      return 'Apprentice of the Trunk';
+    }
+    function copyResult() {
+      const txt = `The Family Archive — Trunk № ${SEED} (${[ 'Apprentice', 'Historian', 'Archivist' ][ DIFF ]}, difficulty ${'✦'.repeat(RATING)}) solved in ${fmtTime(state.played)} (par ${PAR} min) · ${state.audits} audit${state.audits === 1 ? '' : 's'} · ${state.whispers} whisper${state.whispers === 1 ? '' : 's'} — ${rank()}`;
+      if (navigator.clipboard && navigator.clipboard.writeText)
+      {
+        navigator.clipboard.writeText(txt).then(() => toast('Result copied to the clipboard.')).catch(() => toast(txt));
+      } else toast(txt);
+    }
+    function makeExecutorQuestion() {
+      const P = W.P, nm = k => { const p = P[ k ]; return `${p.first} ${p.mar ? W.S : p.sur}`; };
+      const picks = () => FK[ Math.floor(Math.random() * FK.length) ];
+      for (let t = 0; t < 60; t++)
+      {
+        const ty = Math.floor(Math.random() * 3);
+        if (ty === 0)
+        {
+          const a = picks(); let b = picks(); if (a === b) continue;
+          if (P[ a ].b === P[ b ].b) continue;
+          const older = P[ a ].b < P[ b ].b ? a : b;
+          const opts = [ nm(a), nm(b) ];
+          return { q: `${nm(a)} and ${nm(b)} — two branches of one tree. Which was born first?`, options: opts, answer: opts.indexOf(nm(older)) };
+        }
+        if (ty === 1)
+        {
+          const a = picks(); const b = picks();
+          if (a === b || !P[ a ].d || !P[ b ].d || P[ a ].d === P[ b ].d) continue;
+          const longer = (P[ a ].d - P[ a ].b) > (P[ b ].d - P[ b ].b) ? a : b;
+          const opts = [ nm(a), nm(b) ];
+          return { q: `${nm(a)} and ${nm(b)} both rest now. Whose life was the longer?`, options: opts, answer: opts.indexOf(nm(longer)) };
+        }
+        if (ty === 2)
+        {
+          const Y = 1880 + Math.floor(Math.random() * 70);
+          const c = FK.filter(k => P[ k ].b < Y).length;
+          if (c < 2 || c > 9) continue;
+          const set = [ ...new Set([ c, c + 1, c - 1, c + 2 ]) ].filter(v => v >= 0 && v <= 11).sort(() => Math.random() - .5).slice(0, 3);
+          if (!set.includes(c) || set.length < 3) continue;
+          return { q: `A final tally for the executor: how many of the eleven were born before ${Y}?`, options: set.map(String), answer: set.indexOf(c) };
+        }
+      }
+      return null;
+    }
+    /* the epilogue — assembled from the narrative and from how the
+       player actually reasoned their way here. Extracted so a resumed
+       completed trunk regenerates it too. */
+    function assembleEpilogue() {
+      const ep = DOCS.find(d => d.finale);
+      const N = W.N;
+      const opens = [
+        'So the tree stands whole — every name in its own ink, every line drawn where it belongs.',
+        'There — the tree is whole again, and not one name out of place.',
+        'Eleven frames, eleven names, one family: the tree stands as it should.' ];
+      const parts = [ opens[ Math.floor(Math.random() * opens.length) ] ];
+      parts.push(`${W.P.h1.first} and ${W.P.w1.first}; ${W.P.h2.first} and ${W.P.w2.first}; ${W.P.c1.first}, ${W.P.c2.first} and ${W.P.c3.first}; ${W.P.c4.first}, ${W.P.c5.first} and ${W.P.e1.first}. Four generations that began as eleven strange names in a trunk, and ended as a family again — because someone read closely and reasoned kindly.`);
+      parts.push(N.motif.epi);
+      parts.push(`${N.house} keeps its name on the gate, and now, properly, its people on the tree. The family kept a saying, unattributed as family sayings are: ${N.motto}`);
+      if (state.audits === 0 && state.whispers === 0)
+      {
+        parts.push('Not one audit, not one whisper — you reasoned it whole, and she would have expected nothing less.');
+      } else
+      {
+        if (state.audits) parts.push(`The registrar's ink steadied you ${state.audits} time${state.audits === 1 ? '' : 's'}; a good detective uses the tools to hand.`);
+        if (state.whispers) parts.push(`The attic was consulted ${state.whispers} time${state.whispers === 1 ? '' : 's'}; pride builds no trees, and she never minded.`);
+      }
+      if (ERR_FRAME && state.inked.has(ERR_FRAME) && !state.errQ && !state.errHint)
+        parts.push('And the enumerator\u2019s little transposition — you saw through it without being told. Somewhere, a clerk\u2019s ghost is mortified.');
+      const tc = CLUES.find(c => c._torn);
+      if (tc) parts.push(`One last thing fell from the album's back cover: the torn caption, whole again now that the tree is whole — &ldquo;taken the year of ${tc._torn.ev}, when ${tc._torn.who} was born.&rdquo;`);
+      if (DOCS.some(d => d.postscript))
+      {
+        if (N.psAuthor === 'c2')
+        {
+          parts.push('And the second hand, since you ask: her own, all along — writing ahead of herself, as she always did. She never could bear to leave a page unturned.');
+        } else
+        {
+          const ap = W.P[ N.psAuthor ];
+          const nickA = N.nicks[ N.psAuthor ];
+          parts.push(`And the second hand, since you ask: ${ap.first} ${ap.mar ? W.S : ap.sur}'s all along${nickA ? ` — &ldquo;${nickA},&rdquo; the family said, and the family knew` : ''} — ${N.traits[ N.psAuthor ]}, and quicker with a pencil than with goodbyes.`);
+        }
+      }
+      if (N.era) parts.push(`And ${N.era.t} — you would have liked it, I think.`);
+      parts.push(N.voice.epiClose);
+      parts.push('A family, I have decided, is a logic that agrees to remember itself. You have kept the proof.');
+      ep.body = `<div class="d-hand brown">${parts.map(p => `<p>${p}</p>`).join('')}
+    <p class="signed">${N.voice.sign(W.auntFirst)}</p></div>`;
+      if (!ep._ex) ep._ex = makeExecutorQuestion();
+    }
+    function finale() {
+      state.complete = true; tickTime();
+      state.unlocked.add('epilogue');
+      assembleEpilogue();
+      const recs = loadRecs();
+      recs.solved = (recs.solved || 0) + 1;
+      if (state.audits === 0 && state.whispers === 0) recs.flawless = (recs.flawless || 0) + 1;
+      if (ERR_FRAME && state.inked.has(ERR_FRAME) && !state.errQ && !state.errHint) recs.errata = (recs.errata || 0) + 1;
+      const k = todayKey();
+      if (SEED === k) { recs.daily = recs.daily || {}; recs.daily[ k ] = true; }
+      recs.best = recs.best || {};
+      const b = recs.best[ DIFF ];
+      if (!b || state.played < b.time) recs.best[ DIFF ] = { time: Math.round(state.played), audits: state.audits, seed: SEED };
+      saveRecs(recs);
+      renderDocs(); updateStats(); saveState(); snd('fin');
+      setTimeout(() => { $('seal').classList.add('on'); snd('stamp'); }, 600);
+      setTimeout(() => openDoc('epilogue'), 1700);
+    }
+    function fmtTime(ms) { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+    /* ================================================================
+       16. stats & hints
+    ================================================================ */
+    function updateStats() {
+      $('st-sketched').textContent = sketchedCount() + ' / 11';
+      $('st-confirmed').textContent = state.inked.size + ' / 11';
+      $('st-clues').textContent = notedCount() + ' / ' + TOTAL_CLUES;
+      $('prog').style.width = (state.inked.size / 11 * 100) + '%';
+      [ 'btn-audit', 'btn-whisper', 'btn-eraser', 'btn-ticks', 'btn-xcheck', 'btn-worksheet' ].forEach(id => $(id).disabled = state.complete);
+      const b = $('btn-audit');
+      b.textContent = state.complete ? 'Ledger confirmed' : 'Audit the ledger';
+      b.classList.toggle('attention', !state.complete && sketchedCount() === 11 && state.audits === 0);
+    }
+    function setHints() {
+      stage.querySelectorAll('.slot').forEach(s => s.classList.toggle('armed', !!state.selected && !state.annotate));
+      stage.classList.toggle('annotating', state.annotate);
+      $('treehint').textContent = state.annotate
+        ? 'Tick mode: click a frame to mark the names you are still considering — struck names are already ruled out by papers you\u2019ve read. Right-click any frame, any time.'
+        : state.selected
+          ? `Placing ${PEOPLE[ state.selected ].first} ${PEOPLE[ state.selected ].sur} — choose a frame. Click the card again to put it down.`
+          : 'Drag a name from the index — pencil first, proof later. Swaps freely; right-click a frame for ticks; open the Worksheet for the full grid.';
+      $('ledgerhint').textContent = state.selected ? 'Now click a frame on the tree.' : 'Every frame on the tree is one of these names.';
+    }
+
+    /* ================================================================
+       17. pencil ticks
+    ================================================================ */
+    function toggleMark(fk, idx) {
+      const arr = state.marks[ fk ] || (state.marks[ fk ] = []);
+      const i = arr.indexOf(idx);
+      if (i >= 0) arr.splice(i, 1); else arr.push(idx);
+      paintFrame(fk);
+    }
+    function closeTickPop() { const p = $('tickpop'); if (p) p.remove(); }
+    function openTickPop(fk) {
+      closeTickPop();
+      const s = SLOTS[ fk ], ev = evidenceMask(), poss = possibleAt(fk, ev);
+      const pop = document.createElement('div'); pop.className = 'tickpop'; pop.id = 'tickpop';
+      pop.style.left = (s.x > 640 ? s.x - 224 : s.x + 150) + 'px'; pop.style.top = s.y + 'px';
+      const cur = new Set(state.marks[ fk ] || []);
+      pop.innerHTML = `<h5>Pencil ticks — ${CAPTIONS[ fk ]}</h5>
+    <div class="tphint">Struck names are ruled out by papers you&rsquo;ve read (and frames already in ink).</div>
+    <div class="tickgrid">${PEOPLE.map((p, i) => {
+        const ex = !poss.includes(i);
+        let tip = ex ? 'ruled out by the papers' : 'still possible';
+        if (ex) { const cu = culpritsFor(fk, i); if (cu.length) tip = 'ruled out: \u201C' + cu[ 0 ].short + '\u201D'; }
+        return `<button class="tickchip${cur.has(i) ? ' sel' : ''}${ex ? ' excl' : ''}" data-i="${i}" title="${tip}">${p.first}</button>`;
+      }).join('')}</div>
+    <div class="tpfoot"><button class="btn" id="tp-poss">Mark possible (${poss.length})</button><button class="btn" id="tp-clear">Clear</button><button class="btn red" id="tp-done">Done</button></div>`;
+      stage.appendChild(pop);
+      pop.querySelectorAll('.tickchip:not(.excl)').forEach(b => b.onclick = () => { toggleMark(fk, +b.dataset.i); b.classList.toggle('sel'); snd('flip'); saveState(); });
+      pop.querySelector('#tp-poss').onclick = () => { state.marks[ fk ] = poss.slice(); paintFrame(fk); closeTickPop(); saveState(); snd('pencil'); };
+      pop.querySelector('#tp-clear').onclick = () => { state.marks[ fk ] = []; paintFrame(fk); closeTickPop(); saveState(); snd('flip'); };
+      pop.querySelector('#tp-done').onclick = () => { closeTickPop(); saveState(); };
+    }
+
+    /* ================================================================
+       18. drag & click — swap, drag-from-frame, tick mode
+    ================================================================ */
+    let drag = null, hoverSlot = null;
+    $('ledger').addEventListener('pointerdown', e => {
+      const card = e.target.closest('.pcard:not(.confirmed):not(.placed)');
+      if (!card) return;
+      e.preventDefault();
+      drag = { id: +card.dataset.person, from: null, x: e.clientX, y: e.clientY, moved: false, ghost: null };
+      card.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener('pointerdown', e => {
+      const fr = e.target.closest('.slot.pencil .frame'); if (!fr) return;
+      const fk = fr.closest('.slot').dataset.slot;
+      const idx = state.place[ fk ]; if (idx == null) return;
+      e.preventDefault();
+      drag = { id: idx, from: fk, x: e.clientX, y: e.clientY, moved: false, ghost: null };
+      fr.setPointerCapture(e.pointerId);
+    });
+    document.addEventListener('pointermove', e => {
+      if (!drag) return;
+      if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 7)
+      {
+        drag.moved = true;
+        const g = document.createElement('div'); g.className = 'pcard ghost';
+        g.innerHTML = cardInner(drag.id); document.body.appendChild(g); drag.ghost = g;
+        if (drag.from) stage.querySelector(`.slot[data-slot="${drag.from}"]`).classList.add('lifting');
+        if (state.selected) { state.selected = null; renderLedger(); setHints(); }
+      }
+      if (drag.moved)
+      {
+        drag.ghost.style.left = (e.clientX + 14) + 'px'; drag.ghost.style.top = (e.clientY + 10) + 'px';
+        const t = document.elementFromPoint(e.clientX, e.clientY);
+        const slot = t && t.closest ? t.closest('.slot') : null;
+        if (hoverSlot && hoverSlot !== slot) hoverSlot.classList.remove('droptarget');
+        if (slot && !state.inked.has(slot.dataset.slot)) slot.classList.add('droptarget');
+        hoverSlot = slot;
+      }
+    });
+    function endDrag() {
+      if (!drag) return;
+      const d = drag; drag = null;
+      if (d.ghost) d.ghost.remove();
+      if (d.from) { const o = stage.querySelector(`.slot[data-slot="${d.from}"]`); if (o) o.classList.remove('lifting'); }
+      if (d.moved)
+      {
+        lastDrop = performance.now();
+        if (hoverSlot) placePencil(d.id, hoverSlot.dataset.slot, d.from);
+      } else if (d.from)
+      {
+        if (state.selected != null && state.selected !== d.id) placePencil(state.selected, d.from);
+        else returnCard(d.from);
+      } else
+      {
+        state.selected = state.selected === d.id ? null : d.id;
+        renderLedger(); setHints(); snd('flip');
+      }
+      if (hoverSlot) { hoverSlot.classList.remove('droptarget'); hoverSlot = null; }
+    }
+    document.addEventListener('pointerup', endDrag);
+    document.addEventListener('pointercancel', endDrag);
+    stage.addEventListener('click', e => {
+      if (performance.now() - lastDrop < 350) return;
+      const el = e.target.closest('.slot'); if (!el) return;
+      const fk = el.dataset.slot;
+      if (state.annotate) { if (!state.inked.has(fk)) openTickPop(fk); return; }
+      if (state.selected != null) { placePencil(state.selected, fk); return; }
+      if (state.inked.has(fk)) openBio(fk);
+    });
+    stage.addEventListener('contextmenu', e => {
+      const el = e.target.closest('.slot'); if (!el) return;
+      if (state.inked.has(el.dataset.slot)) return;
+      e.preventDefault(); openTickPop(el.dataset.slot);
+    });
+    document.addEventListener('pointerdown', e => {
+      const pop = $('tickpop');
+      if (pop && !pop.contains(e.target) && !e.target.closest('.slot')) closeTickPop();
+      if (!state.selected) return;
+      if (e.target.closest('.pcard') || e.target.closest('.slot')) return;
+      state.selected = null; renderLedger(); setHints();
+    });
+    $('doclist').addEventListener('click', e => {
+      const b = e.target.closest('.doc'); if (!b) return;
+      openDoc(b.dataset.doc);
+    });
+
+    /* ================================================================
+       19. toasts
+    ================================================================ */
+    function toast(msg) {
+      const box = $('toasts');
+      while (box.children.length >= 2) box.firstChild.remove();
+      const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+      box.appendChild(t);
+      setTimeout(() => t.classList.add('out'), 3400);
+      setTimeout(() => t.remove(), 3900);
+    }
+
+    /* ================================================================
+       20. sound — synthesized WebAudio, mute toggle
+    ================================================================ */
+    let AC = null, master = null, muted = false, noiseBuf = null;
+    function audio() {
+      if (!AC)
+      {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        master = AC.createGain(); master.gain.value = .16; master.connect(AC.destination);
+        noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.3, AC.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[ i ] = Math.random() * 2 - 1;
+      }
+      if (AC.state === 'suspended') AC.resume();
+      return AC;
+    }
+    function tone(f, dt, dur, type, peak) {
+      const ctx = audio(), t = ctx.currentTime + dt;
+      const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+      lp.type = 'lowpass'; lp.frequency.value = 2400;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak || .4, t + .012);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(lp); lp.connect(g); g.connect(master);
+      o.start(t); o.stop(t + dur + .05);
+    }
+    function noise(dt, dur, freq, peak) {
+      const ctx = audio(), t = ctx.currentTime + dt;
+      const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq || 1200; bp.Q.value = 1.2;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(peak || .25, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      s.connect(bp); bp.connect(g); g.connect(master);
+      s.start(t); s.stop(t + dur + .05);
+    }
+    function snd(n) {
+      if (muted) return;
+      try
+      {
+        if (n === 'pencil') { noise(0, .07, 2600, .16); noise(.055, .05, 2900, .11); }
+        else if (n === 'ink') { tone(660, 0, .24, 'sine', .22); tone(880, .08, .3, 'sine', .16); }
+        else if (n === 'unlock') { noise(0, .12, 1500, .2); tone(587, .06, .28, 'sine', .26); }
+        else if (n === 'flip') { noise(0, .09, 1100, .22); }
+        else if (n === 'reveal') { tone(880, 0, .14, 'sine', .18); tone(1174, .1, .2, 'sine', .14); }
+        else if (n === 'reject') { tone(150, 0, .18, 'triangle', .5); }
+        else if (n === 'stamp') { noise(0, .05, 300, .5); tone(82, 0, .13, 'sine', .7); }
+        else if (n === 'fin') { [ 392, 523, 659, 784 ].forEach((f, i) => tone(f, i * .13, .5, 'sine', .22)); }
+      } catch (e) { }
+    }
+    function setSoundIcon() { $('btn-sound').innerHTML = muted ? ICONS.mute : ICONS.sound; }
+    $('btn-sound').onclick = () => { muted = !muted; setSoundIcon(); if (!muted) snd('flip'); };
+
+    /* ================================================================
+       21. header & panel buttons
+    ================================================================ */
+    $('btn-notes').innerHTML = ICONS.notes;
+    $('btn-whisper').innerHTML = ICONS.lamp;
+    $('btn-restart').innerHTML = ICONS.restart;
+    $('btn-new').innerHTML = ICONS.newfam;
+    setSoundIcon();
+    let arm = null;
+    function armed(btn, msg, fn) {
+      if (arm === btn) { arm = null; fn(); return; }
+      arm = btn; toast(msg); setTimeout(() => { if (arm === btn) arm = null; }, 3000);
+    }
+    $('btn-restart').onclick = () => armed('restart', 'Click again to repack this trunk and start it over.', () => startGame(SEED, DIFF));
+    $('btn-new').onclick = () => armed('new', 'Click again for a different trunk — a new family, and a new story, entirely.', () => newTrunk());
+    function newTrunk() { startGame(100000 + Math.floor(Math.random() * 900000), DIFF); }
+    $('btn-audit').onclick = audit;
+    $('btn-xcheck').onclick = crossCheck;
+    $('btn-worksheet').onclick = openWorksheet;
+    $('btn-eraser').onclick = () => {
+      closeTickPop();
+      const n = sketchedCount();
+      if (!n) { toast('Nothing in pencil to erase.'); snd('flip'); return; }
+      state.place = {};
+      FK.forEach(paintFrame); renderLedger(); updateStats(); saveState();
+      toast(n + ' sketch' + (n === 1 ? '' : 'es') + ' erased.'); snd('flip');
+    };
+    $('btn-whisper').onclick = whisper;
+    $('btn-notes').onclick = () => { if (W) openNotes(); };
+    $('btn-ticks').onclick = () => {
+      state.annotate = !state.annotate;
+      $('btn-ticks').classList.toggle('sel', state.annotate);
+      closeTickPop(); setHints(); snd('flip');
+    };
+
+    /* ================================================================
+       22. game start / intro / resume / records / daily trunk
+    ================================================================ */
+    function startGame(seed, diff, save) {
+      SEED = (seed || 100000 + Math.floor(Math.random() * 900000)) >>> 0; DIFF = diff;
+      let w = null, built = null;
+      for (let t = 0; t < 60 && !built; t++)
+      {
+        rng = mulberry32((SEED + t * 7919) >>> 0);
+        w = genWorld(); if (!w) continue;
+        w.N = genNarr(w); /* the story — facts and cast alike — grows from the same seed */
+        W = w; PEOPLE = FK.map(k => w.P[ k ]);
+        ASSIGN = null; COL = null; ERR_FRAME = null;
+        built = buildPuzzle(diff);
+      }
+      if (!built) { return startGame((100000 + Math.floor(Math.random() * 900000)) >>> 0, diff, save); }
+      DERIV = built.deriv; CLUES = built.clues; RATING = built.rating; PAR = built.par; DOC_FOR_FRAME = {};
+      DOCS = buildDocs(w, built.clues);
+      TOTAL_CLUES = DOCS.reduce((n, d) => n + (d.clueLines ? d.clueLines.length : 0), 0);
+      state.place = {}; state.inked = new Set(); state.read = new Set();
+      state.unlocked = new Set(DOCS.filter(d => d.start).map(d => d.id));
+      state.checked = {}; state.audits = 0; state.whispers = 0; state.complete = false;
+      state.played = 0; state._t = Date.now(); state.indexReady = false; state.selected = null;
+      state.marks = {}; state.hintLevel = {}; state.annotate = false; replaying = false;
+      state.errQ = false; state.errHint = false; state.inscribed = {};
+      $('btn-ticks').classList.remove('sel');
+      closeTickPop();
+      if (save && save.st)
+      {
+        const s = save.st;
+        state.place = s.place || {}; state.inked = new Set(s.inked || []); state.read = new Set(s.read || []);
+        state.unlocked = new Set(s.unlocked && s.unlocked.length ? s.unlocked : [ ...state.unlocked ]);
+        state.checked = s.checked || {}; state.audits = s.audits || 0; state.whispers = s.whispers || 0;
+        state.complete = !!s.complete; state.played = s.played || 0; state._t = Date.now(); state.indexReady = !!s.indexReady;
+        state.marks = s.marks || {}; state.hintLevel = s.hintLevel || {};
+        state.errQ = !!s.errQ; state.errHint = !!s.errHint;
+      }
+      $('brass-plate').textContent = `TRUNK № ${SEED} · THE ${w.S} FAMILY · ${[ 'APPRENTICE', 'HISTORIAN', 'ARCHIVIST' ][ DIFF ]} · ${'✦'.repeat(RATING)}${'✧'.repeat(5 - RATING)}`;
+      resetWires(); createSlots(); renderDocs(); renderLedger(); updateStats(); setHints();
+      if (state.complete)
+      {
+        state.unlocked.add('epilogue');
+        assembleEpilogue(); /* regenerate the letter for a resumed finished trunk */
+        $('seal').classList.add('on');
+        links.forEach(l => { if (l.need.every(f => state.inked.has(f))) { l.on = true; l.ink.style.visibility = 'visible'; } });
+      }
+      $('intro').classList.remove('open');
+      saveState();
+      if (!state.complete && !state.read.size)
+        toast(`Trunk № ${SEED} is open — it arrived with ${seasonPhen()} in the seams. The ${w.N.house} keeps its secrets in paper.`);
+    }
+    function recsLine() {
+      const recs = loadRecs();
+      if (!recs.solved) return '';
+      let best = null, bd = null;
+      Object.keys(recs.best || {}).forEach(d => { const b = recs.best[ d ]; if (b && (!best || b.time < best.time)) { best = b; bd = d; } });
+      const daily = (recs.daily || {})[ todayKey() ] ? ' · daily ✓' : '';
+      const fl = recs.flawless ? ` · ${recs.flawless} flawless` : '';
+      const er = recs.errata ? ` · ${recs.errata} misprint${recs.errata === 1 ? '' : 's'} seen through` : '';
+      const ex = recs.executor ? ` · executor ✓${recs.executor}` : '';
+      return `<p class="recs">${recs.solved} trunk${recs.solved === 1 ? '' : 's'} solved${best ? ` · best: ${fmtTime(best.time)} (${[ 'Apprentice', 'Historian', 'Archivist' ][ bd ]})` : ''}${fl}${er}${ex}${daily}</p>`;
+    }
+    function showIntro(mode) {
+      const sv = loadSave();
+      const recs = loadRecs();
+      const diffNames = [ 'Apprentice', 'Historian', 'Archivist' ];
+      const diffSubs = [ 'corroborating papers included; every name fairly clued', 'the standard trunk — lean, fair, deductive', 'trimmed to the logical minimum, then re-verified' ];
+      const k = todayKey(), dailyDone = (recs.daily || {})[ k ];
+      let html;
+      if (mode === 'resume' && sv)
+      {
+        const st = sv.st || {};
+        html = `<p class="intro-loc">The ${sv.fam} family · trunk № ${sv.seed}</p>
+      <h2>Welcome back</h2>
+      <p>You had ${Object.keys(st.place || {}).length} of 11 frames sketched and ${(st.inked || []).length} confirmed in ink, with ${st.audits || 0} audit${st.audits === 1 ? '' : 's'} spent. The trunk is where you left it — letters, keepsakes, the inventory of a house, and whatever else the family was holding.</p>
+      ${recsLine()}
+      <div class="finbtns" style="margin:22px 0 6px"><button class="btn" id="iv-new2">A different trunk</button><button class="btn red" id="iv-resume">Resume trunk № ${sv.seed}</button></div>`;
+      } else
+      {
+        html = `<p class="intro-loc">Present Day</p>
+      <h2>The Family Archive</h2>
+      <p>A trunk has arrived with no instructions — only papers and an index of names. Eleven frames stand empty on the tree. Every trunk carries its own small history: a house with a name and rooms, a keepsake that outlasts the paperwork, a family motto nobody remembers coining, letters written in someone's particular voice, and a family with its own names for its own people. The papers exclude as readily as they include, count as readily as they name — and one of them, at least, was written by a hand that slipped.</p>
+      <ol class="steps">
+        <li><b>I</b><span>Examine the trunk&rsquo;s papers — dates, trades, totals, ranks, coincidences, town events, the pencil marginalia, the house book. Watch for the family&rsquo;s nicknames; the index keeps both names.</span></li>
+        <li><b>II</b><span>Sketch your deductions. Keep a clean head with the <b style="width:auto;font-size:13px">Worksheet</b> and <b style="width:auto;font-size:13px">pencil ticks</b> (right-click any frame).</span></li>
+        <li><b>III</b><span><b style="width:auto;font-size:13px">Cross-check</b> freely; <b style="width:auto;font-size:13px">audit</b> for ink; ask the attic when stuck — it starts with a <i>method</i>, and only descends to answers.</span></li>
+      </ol>
+      <p class="verif">Every trunk is machine-verified before it ships: a complete chain of deduction — at each step exactly one name fits — always reaches the answer, each step&rsquo;s technique and minimal evidence are recorded, and no guessing is ever required. The story is generated from the same seed as the facts, so a trunk&rsquo;s number is its whole world.</p>
+      <div class="diffrow">${[ 0, 1, 2 ].map(i => `<button class="diffbtn${i === 1 ? ' sel' : ''}" data-d="${i}">${diffNames[ i ]}<small>${diffSubs[ i ]}</small></button>`).join('')}</div>
+      <p class="compose-lbl">Reasoning asked of you</p>
+      <div class="chiprow" id="composerow" style="justify-content:center;margin:4px 0 2px">${COMPOSE_DEFS.map(d => `<button class="tickchip${COMPOSE.has(d.id) ? ' sel' : ''}" data-t="${d.id}">${d.label}</button>`).join('')}</div>
+      <p class="mut" style="margin:2px 0 4px">Direct records and eliminations are always in. Toggle the rest — the engine re-verifies whichever mixture you choose.</p>
+      <div class="seedrow"><span>Trunk №</span><input class="seedin" id="seedin" inputmode="numeric" placeholder="blank for a new one" maxlength="9"><span>— same number, same family, same story</span></div>
+      <div class="seedrow"><button class="btn" id="btn-daily">The daily trunk — № ${k}</button>${dailyDone ? '<span class="mut">✓ solved today</span>' : ''}</div>
+      ${recsLine()}
+      <button class="btn red" id="btn-open">Open the trunk</button>`;
+      }
+      $('intro-card').innerHTML = html;
+      if (mode === 'resume' && sv)
+      {
+        $('iv-resume').onclick = () => startGame(sv.seed, sv.diff || 1, sv);
+        $('iv-new2').onclick = () => showIntro('new');
+      } else
+      {
+        $('intro-card').querySelectorAll('.diffbtn').forEach(b => b.onclick = () => {
+          $('intro-card').querySelectorAll('.diffbtn').forEach(x => x.classList.remove('sel'));
+          b.classList.add('sel');
+        });
+        $('intro-card').querySelectorAll('#composerow .tickchip').forEach(b => b.onclick = () => {
+          const t = b.dataset.t;
+          if (COMPOSE.has(t)) { COMPOSE.delete(t); b.classList.remove('sel'); }
+          else { COMPOSE.add(t); b.classList.add('sel'); }
+          saveCompose(); snd('flip');
+        });
+        $('btn-daily').onclick = () => {
+          const diff = parseInt($('intro-card').querySelector('.diffbtn.sel').dataset.d, 10);
+          startGame(k, diff);
+        };
+        $('btn-open').onclick = () => {
+          const raw = ($('seedin').value || '').trim();
+          const seed = /^\d{3,9}$/.test(raw) ? parseInt(raw, 10) : null;
+          const diff = parseInt($('intro-card').querySelector('.diffbtn.sel').dataset.d, 10);
+          startGame(seed, diff);
+        };
+      }
+    }
+    (function init() { showIntro(loadSave() ? 'resume' : 'new'); })();
+
+    /* ================================================================
+       23. keys & scaling
+    ================================================================ */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape')
+      {
+        closeTickPop();
+        if ($('intro').classList.contains('open')) return;
+        [ 'reader', 'psheet', 'notes', 'wksheet' ].forEach(id => $(id).classList.remove('open'));
+        if (state.selected) { state.selected = null; renderLedger(); setHints(); }
+        return;
+      }
+      if ($('intro').classList.contains('open') || !W) return;
+      const tag = (document.activeElement && document.activeElement.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'n' || e.key === 'N') openNotes();
+      else if (e.key === 'a' || e.key === 'A') audit();
+      else if (e.key === 'c' || e.key === 'C') crossCheck();
+      else if (e.key === 'h' || e.key === 'H') whisper();
+      else if (e.key === 'e' || e.key === 'E') $('btn-eraser').click();
+      else if (e.key === 'w' || e.key === 'W')
+      {
+        if ($('wksheet').classList.contains('open')) $('wksheet').classList.remove('open');
+        else openWorksheet();
+      }
+    });
+    [ 'reader', 'psheet', 'notes', 'wksheet' ].forEach(id => {
+      $(id).addEventListener('pointerdown', e => { if (e.target === $(id)) $(id).classList.remove('open'); });
+    });
+    new ResizeObserver(() => {
+      const r = vp.getBoundingClientRect();
+      const s = Math.min(r.width / 1030, r.height / 790, 1.15);
+      stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+    }).observe(vp);
+  </script>
+</body>
+
+</html>
